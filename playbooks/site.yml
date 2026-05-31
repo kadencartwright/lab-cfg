@@ -1,0 +1,6 @@
+---
+- name: Prepare hosts before K3s installation
+  ansible.builtin.import_playbook: host-prep.yml
+
+- name: Install or reconcile K3s
+  ansible.builtin.import_playbook: k3s.orchestration.site

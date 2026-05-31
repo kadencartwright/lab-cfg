@@ -1,0 +1,81 @@
+---
+- name: Require Debian-family hosts
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == "Debian"
+    fail_msg: "This host prep role currently targets Ubuntu/Debian-family systems."
+
+- name: Set hostname from inventory
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+  when: host_prep_manage_hostname
+
+- name: Install host packages
+  ansible.builtin.apt:
+    name: "{{ host_prep_base_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Enable time sync
+  ansible.builtin.service:
+    name: chrony
+    enabled: true
+    state: started
+
+- name: Enable iSCSI daemon for future Longhorn use
+  ansible.builtin.service:
+    name: iscsid
+    enabled: true
+    state: started
+
+- name: Load kernel modules now
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ host_prep_kernel_modules }}"
+
+- name: Persist kernel modules
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/kubernetes.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      {% for module in host_prep_kernel_modules %}
+      {{ module }}
+      {% endfor %}
+
+- name: Apply Kubernetes sysctl settings
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+    sysctl_file: /etc/sysctl.d/99-kubernetes.conf
+  loop: "{{ host_prep_sysctl | dict2items }}"
+
+- name: Disable active swap
+  ansible.builtin.command: swapoff -a
+  changed_when: true
+  when:
+    - host_prep_disable_swap
+    - ansible_swaptotal_mb | int > 0
+
+- name: Comment swap entries in fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#]\S+\s+\S+\s+swap\s+\S+.*)$'
+    replace: '# \1'
+  when: host_prep_disable_swap
+
+- name: Disable sleep targets
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    masked: true
+  loop:
+    - sleep.target
+    - suspend.target
+    - hibernate.target
+    - hybrid-sleep.target
+  when: host_prep_disable_sleep

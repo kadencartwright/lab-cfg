@@ -1,0 +1,4 @@
+---
+# Copy this file to vault.yml, fill it in, then encrypt it with:
+# ansible-vault encrypt inventories/lab/group_vars/k3s_cluster/vault.yml
+vault_k3s_token: "replace-with-openssl-rand-base64-64"

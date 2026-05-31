@@ -1,0 +1,28 @@
+---
+host_prep_manage_hostname: false
+host_prep_disable_swap: true
+host_prep_disable_sleep: true
+
+host_prep_base_packages:
+  - ca-certificates
+  - chrony
+  - conntrack
+  - curl
+  - ethtool
+  - gnupg
+  - iptables
+  - jq
+  - nfs-common
+  - open-iscsi
+  - python3-apt
+  - socat
+
+host_prep_kernel_modules:
+  - br_netfilter
+  - overlay
+  - iscsi_tcp
+
+host_prep_sysctl:
+  net.bridge.bridge-nf-call-iptables: "1"
+  net.bridge.bridge-nf-call-ip6tables: "1"
+  net.ipv4.ip_forward: "1"

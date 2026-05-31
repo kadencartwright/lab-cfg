@@ -1,0 +1,38 @@
+---
+ansible_user: ubuntu
+ansible_port: 22
+
+# Pin exact versions. Check available versions with:
+# gh api repos/k3s-io/k3s/releases --jq '.[].tag_name'
+k3s_version: v1.35.5+k3s1
+
+# Store the real value in vault.yml as vault_k3s_token.
+token: "{{ vault_k3s_token }}"
+
+# Start with the first server IP unless you have already built an API VIP/load balancer.
+# For a future VIP, set this to something like 192.168.10.30 and include it in tls-san below.
+k3s_api_endpoint: "{{ hostvars[groups['server'][0]].ansible_host | default(groups['server'][0]) }}"
+api_endpoint: "{{ k3s_api_endpoint }}"
+api_port: 6443
+cluster_context: lab-k3s
+
+host_prep_manage_hostname: true
+host_prep_disable_swap: true
+host_prep_disable_sleep: true
+
+server_config_yaml: |
+  write-kubeconfig-mode: "0644"
+  disable:
+    - servicelb
+  tls-san:
+    - "{{ k3s_api_endpoint }}"
+  etcd-snapshot-schedule-cron: "0 */6 * * *"
+  etcd-snapshot-retention: 20
+  node-label:
+    - "nodeclass={{ nodeclass }}"
+    - "storage={{ storageclass }}"
+
+agent_config_yaml: |
+  node-label:
+    - "nodeclass={{ nodeclass | default('agent') }}"
+    - "storage={{ storageclass | default('none') }}"

@@ -1,0 +1,16 @@
+.ansible/
+.cache/
+*.retry
+*.log
+
+# Local secrets and generated access material
+*.vault.yml
+inventories/**/vault.yml
+inventories/**/host_vars/*/vault.yml
+kubeconfig*
+*.agekey
+
+# Editor and OS noise
+.DS_Store
+.idea/
+.vscode/
