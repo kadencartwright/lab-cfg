@@ -2,13 +2,16 @@
 
 ## Initial Topology
 
-The starting assumption is three Ubuntu Server 26.04 K3s server nodes with embedded etcd:
+The starting assumption is Ubuntu Server 26.04 hosts with three K3s server nodes using embedded etcd.
+
+If four machines are available, do not make all four etcd/control-plane members. Use three K3s servers and one agent. An even-sized etcd cluster adds failure modes without improving quorum for this homelab shape.
 
 | Host | Role | Notes |
 | --- | --- | --- |
-| `lab-um890` | K3s server and worker | Heavy workloads and fast storage. |
-| `lab-ryzen5600` | K3s server and worker | General workload capacity. |
-| `lab-n100` | K3s server and light worker | Control plane, small services, and replica capacity. |
+| `lab-node-1` | K3s server and worker | MAC `58:47:ca:7b:8a:5d`; pending IP/current hostname confirmation. |
+| `lab-node-2` | K3s server and worker | MAC `e8:ff:1e:d4:26:8b`; pending IP/current hostname confirmation. |
+| `lab-node-3` | K3s server and worker | MAC `1c:69:7a:c7:6f:f3`; pending IP/current hostname confirmation. |
+| `lab-node-4` | K3s agent | MAC `84:47:09:2f:48:9a`; pending IP/current hostname confirmation. |
 
 This is intentionally simple: no separate agents until there is a reason to add them.
 
