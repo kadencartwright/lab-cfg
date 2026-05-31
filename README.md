@@ -2,7 +2,7 @@
 
 Homelab infrastructure management code.
 
-This repo starts with an Ansible control setup intended to run from a Raspberry Pi and bootstrap three Ubuntu Server nodes into a K3s cluster.
+This repo starts with an Ansible control setup intended to run from a Raspberry Pi and bootstrap three Ubuntu Server 26.04 nodes into a K3s cluster.
 
 ## Current Shape
 
@@ -61,9 +61,8 @@ make upgrade
 
 ## Questions To Fill In
 
-- Actual node hostnames, LAN IPs, and SSH username.
+- Exact names/IPs for the two lab nodes not discoverable from this workstation.
 - Whether SSH reaches nodes over LAN, Tailscale, or both.
-- Whether nodes are all Ubuntu Server 24.04 LTS.
 - Desired Kubernetes API endpoint: first server IP initially, kube-vip static manifest, or an external load balancer.
 - MetalLB service IP range on your LAN.
 - Tailscale auth method for hosts and Kubernetes operator.

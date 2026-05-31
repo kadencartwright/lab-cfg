@@ -2,13 +2,13 @@
 
 ## Initial Topology
 
-The starting assumption is three K3s server nodes with embedded etcd:
+The starting assumption is three Ubuntu Server 26.04 K3s server nodes with embedded etcd:
 
 | Host | Role | Notes |
 | --- | --- | --- |
-| `um890` | K3s server and worker | Heavy workloads and fast storage. |
-| `ryzen5600` | K3s server and worker | General workload capacity. |
-| `n100` | K3s server and light worker | Control plane, small services, and replica capacity. |
+| `lab-um890` | K3s server and worker | Heavy workloads and fast storage. |
+| `lab-ryzen5600` | K3s server and worker | General workload capacity. |
+| `lab-n100` | K3s server and light worker | Control plane, small services, and replica capacity. |
 
 This is intentionally simple: no separate agents until there is a reason to add them.
 
