@@ -24,7 +24,28 @@ The runtime config is also SOPS-encrypted:
 make baby-monitor-secret
 ```
 
-`make baby-monitor-secret` writes a local copy of the generated access token to:
+By default, `make baby-monitor-secret` imports the existing Kubernetes Secret from the
+local baby-monitor checkout:
+
+```text
+../baby-monitor/deploy/kubernetes/secret.local.yaml
+```
+
+To import a different Secret manifest:
+
+```bash
+BABY_MONITOR_SECRET_SOURCE=/path/to/secret.local.yaml make baby-monitor-secret
+```
+
+To intentionally replace an existing encrypted secret after changing camera config:
+
+```bash
+OVERWRITE=1 make baby-monitor-secret
+```
+
+If no existing Secret manifest is found, the helper falls back to prompting for an
+access token and an optional camera JSON file. In that fallback mode, it writes a
+local copy of the generated access token to:
 
 ```text
 .secrets/baby-monitor-access-token
