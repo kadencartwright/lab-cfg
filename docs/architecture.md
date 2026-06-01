@@ -4,14 +4,11 @@
 
 The starting assumption is Ubuntu Server 26.04 hosts with three K3s server nodes using embedded etcd.
 
-If four machines are available, do not make all four etcd/control-plane members. Use three K3s servers and one agent. An even-sized etcd cluster adds failure modes without improving quorum for this homelab shape.
-
 | Host | Role | Notes |
 | --- | --- | --- |
-| `lab-node-1` | K3s server and worker | MAC `58:47:ca:7b:8a:5d`; pending IP/current hostname confirmation. |
-| `lab-node-2` | K3s server and worker | MAC `e8:ff:1e:d4:26:8b`; pending IP/current hostname confirmation. |
-| `lab-node-3` | K3s server and worker | MAC `1c:69:7a:c7:6f:f3`; pending IP/current hostname confirmation. |
-| `lab-node-4` | K3s agent | MAC `84:47:09:2f:48:9a`; pending IP/current hostname confirmation. |
+| `lab-um890` | K3s server and worker | `192.168.32.41`, MAC `3c:c5:dd:02:d5:a2`; strongest node. |
+| `lab-bosgame` | K3s server and worker | `192.168.32.69`, MAC `4c:50:dd:3d:8f:14`; general workload capacity. |
+| `lab-beelink-mini-s` | K3s server and light worker | `192.168.32.169`, MAC `f4:3b:d8:71:47:92`; keep heavier workloads elsewhere. |
 
 This is intentionally simple: no separate agents until there is a reason to add them.
 

@@ -53,6 +53,15 @@ make prep
 make site
 ```
 
+If `make ping` reports host key verification failures, refresh the local SSH host keys before running Ansible:
+
+```bash
+ssh-keygen -R 192.168.32.41
+ssh-keygen -R 192.168.32.69
+ssh-keygen -R 192.168.32.169
+ssh-keyscan -H 192.168.32.41 192.168.32.69 192.168.32.169 >> ~/.ssh/known_hosts
+```
+
 For upgrades, change `k3s_version` in `inventories/lab/group_vars/k3s_cluster/main.yml`, then run:
 
 ```bash
@@ -61,8 +70,6 @@ make upgrade
 
 ## Questions To Fill In
 
-- Exact names/IPs for the two lab nodes not discoverable from this workstation.
-- Whether SSH reaches nodes over LAN, Tailscale, or both.
 - Desired Kubernetes API endpoint: first server IP initially, kube-vip static manifest, or an external load balancer.
 - MetalLB service IP range on your LAN.
 - Tailscale auth method for hosts and Kubernetes operator.
