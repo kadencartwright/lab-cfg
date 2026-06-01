@@ -4,7 +4,7 @@ INVENTORY ?= inventories/lab/hosts.yml
 VAULT_PASSWORD_FILE ?= .secrets/ansible-vault-password
 VAULT_ARGS := $(shell test -f $(VAULT_PASSWORD_FILE) && printf -- '--vault-password-file %s' '$(VAULT_PASSWORD_FILE)')
 
-.PHONY: collections ping sudo-check check prep site upgrade tailscale-secret
+.PHONY: collections ping sudo-check check prep site upgrade tailscale-secret ghcr-pull-secret baby-monitor-secret
 
 collections:
 	$(ANSIBLE_GALAXY) collection install -r requirements.yml -p .ansible/collections
@@ -29,3 +29,9 @@ upgrade:
 
 tailscale-secret:
 	scripts/create-tailscale-operator-secret
+
+ghcr-pull-secret:
+	scripts/create-ghcr-pull-secret
+
+baby-monitor-secret:
+	scripts/create-baby-monitor-secret

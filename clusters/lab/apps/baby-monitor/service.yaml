@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: baby-monitor
+  namespace: baby-monitor
+  labels:
+    app.kubernetes.io/name: baby-monitor
+  annotations:
+    tailscale.com/hostname: baby-monitor
+spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
+  selector:
+    app.kubernetes.io/name: baby-monitor
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

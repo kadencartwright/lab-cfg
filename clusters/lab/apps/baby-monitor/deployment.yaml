@@ -1,0 +1,76 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: baby-monitor
+  namespace: baby-monitor
+  labels:
+    app.kubernetes.io/name: baby-monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: baby-monitor
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: baby-monitor
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: baby-monitor
+          image: ghcr.io/kadencartwright/baby-monitor:lab
+          imagePullPolicy: Always
+          env:
+            - name: BABY_MONITOR_DATA_DIR
+              value: /data
+            - name: BABY_MONITOR_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: baby-monitor-config
+                  key: BABY_MONITOR_ACCESS_TOKEN
+            - name: BABY_MONITOR_CAMERAS_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: baby-monitor-config
+                  key: BABY_MONITOR_CAMERAS_JSON
+            - name: HOST
+              value: 0.0.0.0
+            - name: PORT
+              value: "3000"
+            - name: NODE_ENV
+              value: production
+          ports:
+            - name: http
+              containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}

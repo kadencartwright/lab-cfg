@@ -2,4 +2,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  # Enable after creating:
+  # - clusters/lab/apps/baby-monitor/config.sops.yaml
+  # - clusters/lab/apps/baby-monitor/ghcr-pull.sops.yaml
+  # - baby-monitor
   - whoami
