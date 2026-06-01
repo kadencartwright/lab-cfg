@@ -49,8 +49,16 @@ Then run:
 
 ```bash
 make ping
+make sudo-check
 make prep
 make site
+```
+
+`make ping` checks SSH as the `lab` user. `make sudo-check` verifies passwordless sudo, which is required for unattended host prep and K3s installation. If passwordless sudo is not enabled, either add a sudoers rule for `lab` or run playbooks with become password prompting:
+
+```bash
+ANSIBLE_PLAYBOOK="ansible-playbook --ask-become-pass" make prep
+ANSIBLE_PLAYBOOK="ansible-playbook --ask-become-pass" make site
 ```
 
 If `make ping` reports host key verification failures, refresh the local SSH host keys before running Ansible:
