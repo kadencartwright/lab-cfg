@@ -45,6 +45,17 @@ Edit:
 - `inventories/lab/group_vars/k3s_cluster/main.yml`
 - `inventories/lab/group_vars/k3s_cluster/vault.yml`
 
+Optionally store the Ansible Vault password locally so `make` commands do not prompt:
+
+```bash
+mkdir -p .secrets
+chmod 700 .secrets
+printf '%s\n' 'replace-with-your-vault-password' > .secrets/ansible-vault-password
+chmod 600 .secrets/ansible-vault-password
+```
+
+`.secrets/` is ignored by Git.
+
 Then run:
 
 ```bash

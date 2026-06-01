@@ -1,6 +1,8 @@
 ANSIBLE_PLAYBOOK ?= ansible-playbook
 ANSIBLE_GALAXY ?= ansible-galaxy
 INVENTORY ?= inventories/lab/hosts.yml
+VAULT_PASSWORD_FILE ?= .secrets/ansible-vault-password
+VAULT_ARGS := $(shell test -f $(VAULT_PASSWORD_FILE) && printf -- '--vault-password-file %s' '$(VAULT_PASSWORD_FILE)')
 
 .PHONY: collections ping sudo-check check prep site upgrade
 
@@ -14,13 +16,13 @@ sudo-check:
 	ansible k3s_cluster -i $(INVENTORY) -m command -a 'sudo -n true' -e ansible_become=false
 
 check:
-	$(ANSIBLE_PLAYBOOK) -i $(INVENTORY) playbooks/site.yml --syntax-check
+	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/site.yml --syntax-check
 
 prep:
-	$(ANSIBLE_PLAYBOOK) -i $(INVENTORY) playbooks/host-prep.yml
+	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/host-prep.yml
 
 site:
-	$(ANSIBLE_PLAYBOOK) -i $(INVENTORY) playbooks/site.yml
+	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/site.yml
 
 upgrade:
-	$(ANSIBLE_PLAYBOOK) -i $(INVENTORY) playbooks/upgrade.yml
+	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/upgrade.yml
