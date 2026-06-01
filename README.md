@@ -8,18 +8,6 @@ part real infrastructure, part public reference for how I approach small-scale
 platform engineering: explicit bootstrap steps, pinned versions, encrypted
 secrets, and repeatable operations.
 
-## What This Demonstrates
-
-- **Ansible host automation** for Ubuntu Server nodes.
-- **K3s high availability** with three server nodes and embedded etcd.
-- **GitOps with Flux** for cluster add-ons and workloads.
-- **SOPS + age secret management** so Kubernetes Secrets can be committed
-  encrypted.
-- **Tailscale-only service exposure** for private applications without opening
-  them to the LAN or public internet.
-- **GHCR image deployment** using an encrypted Kubernetes image pull secret.
-- **Operational hygiene**: version pins, Makefile workflows, ignored local
-  secret material, and recovery-oriented docs.
 
 ## Current Architecture
 
@@ -180,17 +168,9 @@ not a goal right now.
 - [Host discovery notes](docs/discovery.md)
 
 ## Current Roadmap
-
 - Enable scheduled K3s etcd snapshots.
 - Copy etcd snapshots off-node.
-- Back up the SOPS age private key outside the cluster.
 - Decide on persistent storage policy before adding Longhorn.
 - Move image releases from mutable tags toward immutable tags or digests.
 - Add monitoring and alerting after backup/recovery is documented.
 
-## Public Repo Note
-
-This repo contains real infrastructure configuration, including private RFC1918
-addresses and encrypted secret manifests. The addresses are not treated as
-secrets. The private keys and plaintext credentials required to operate the
-cluster are intentionally excluded.

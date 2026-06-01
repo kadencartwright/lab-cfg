@@ -51,8 +51,3 @@ local copy of the generated access token to:
 .secrets/baby-monitor-access-token
 ```
 
-The service is exposed only through Tailscale:
-
-```text
-http://baby-monitor.bleak-banana.ts.net
-```
