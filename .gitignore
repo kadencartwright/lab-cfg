@@ -1,6 +1,7 @@
 .ansible/
 .cache/
 .secrets/
+.tools/
 *.retry
 *.log
 
