@@ -2,7 +2,7 @@
 - name: Require Debian-family hosts
   ansible.builtin.assert:
     that:
-      - ansible_os_family == "Debian"
+      - ansible_facts["os_family"] == "Debian"
     fail_msg: "This host prep role currently targets Ubuntu/Debian-family systems."
 
 - name: Set hostname from inventory
@@ -60,7 +60,7 @@
   changed_when: true
   when:
     - host_prep_disable_swap
-    - ansible_swaptotal_mb | int > 0
+    - ansible_facts["swaptotal_mb"] | int > 0
 
 - name: Comment swap entries in fstab
   ansible.builtin.replace:
