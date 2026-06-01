@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: ghcr-pull
+    namespace: baby-monitor
+type: kubernetes.io/dockerconfigjson
+data:
+    .dockerconfigjson: ENC[AES256_GCM,data:JBVAhsMrvjHe3dRRz9ZSsG0HDt17LzbBvuNST+5d3KEsw27snMLs8n9RzZ7mO6NstaSUFoawkFgeNLKG0zxaQ49PJT7d2J5NenqyTLIVxyc3sDFvVWhf2vI0psSIy8MEyRBCx+4oVz0549DYm8w2lA1nM4ePswH79aRbpc0ZDsaWNraclr0cBclSyg8GAFRye2OmWWN8IDMp1Sw4rV5PchmQPSmJNwMp2GC0wtUL7XBZS1xH/Xm5PpfeMYBdAtX895MFXFK8IZzjzoov/p6Nx37eQX5VMOxA1G0KxSosWt4Np2DgC3QdTf/9o4zio6HvWSbd5Z42Kp6JLqI5XGsyww==,iv:jlW/8iIyhJ4AWFZQCyh3CD5rfHT8nv8vI9k0V8opCEs=,tag:UYIBvy2O01ZpoPZCsDrNwQ==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBEWHkzb29SeDhITmdQdVlm
+            NWllbWIvY0h5amViYjlVOVM4QURlYW9JY2xRCmVWUnZCR3RzUXRnWktFLzBpNFFp
+            dWNkb0VxeUg5ZGVrYTBsVVkxUlFTd3cKLS0tIGFPM1BJN2MyTTNtb3lRcU5OeWVi
+            RFBWVm5FaVUvcTNJQ0ZFcS8wSGxTNXMKFRtlpWOaksJFoUa11PsppFZyfbdAQqT7
+            1jShpQ47AtG3HTkMHWbVIniETGkEMv46GOQCmurmn65xzF36+nvvQg==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age18sl2qhm4ja8l2q22t7h6ktmlz2zvc32mmj9ezeqt42f40g4crdpsrfyy09
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-06-01T05:52:58Z"
+    mac: ENC[AES256_GCM,data:nmdh2zBqVFScTrYvRCqf6l9pi9SW/KWocn+bDl48g1Rtxa1hSvE8cyqGeDO3XENSFWC02LkNKsLCnb5pgbt6x+b1NOL/JOxhO9SSPu8X1xyofXkFj9jqNXkx2+Lni8enxOk/4N2AVpRcE7xG/qXJyUJsrXijodD3cROh0u9GVO4=,iv:CScppvLgouo0lLBXijtKAOOIFh5qMJLHRBZbI7P/vq4=,tag:YicT3nSC8dVU/66UCe41rQ==,type:str]
+    version: 3.13.1
