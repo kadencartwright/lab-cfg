@@ -17,6 +17,51 @@
     update_cache: true
     cache_valid_time: 3600
 
+- name: Ensure configured kernel command-line args are present
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+
+      file=/etc/default/grub
+      arg="${KERNEL_ARG}"
+
+      current="$(sed -n 's/^GRUB_CMDLINE_LINUX="\([^"]*\)".*/\1/p' "$file" | tail -n 1)"
+      for token in $current; do
+        if [[ "$token" == "$arg" ]]; then
+          exit 0
+        fi
+      done
+
+      tmp="$(mktemp)"
+      awk -v arg="$arg" '
+        BEGIN { updated = 0 }
+        /^GRUB_CMDLINE_LINUX="/ && updated == 0 {
+          if ($0 ~ /^GRUB_CMDLINE_LINUX=""/) {
+            sub(/"$/, arg "\"")
+          } else {
+            sub(/"$/, " " arg "\"")
+          }
+          updated = 1
+        }
+        { print }
+        END {
+          if (updated == 0) {
+            print "GRUB_CMDLINE_LINUX=\"" arg "\""
+          }
+        }
+      ' "$file" > "$tmp"
+      cat "$tmp" > "$file"
+      rm -f "$tmp"
+      echo changed
+  args:
+    executable: /bin/bash
+  environment:
+    KERNEL_ARG: "{{ item }}"
+  loop: "{{ host_prep_kernel_cmdline_args }}"
+  register: host_prep_kernel_cmdline_result
+  changed_when: "'changed' in host_prep_kernel_cmdline_result.stdout"
+  notify: Update grub
+
 - name: Enable time sync
   ansible.builtin.service:
     name: chrony

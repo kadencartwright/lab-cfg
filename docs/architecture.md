@@ -12,6 +12,15 @@ The starting assumption is Ubuntu Server 26.04 hosts with three K3s server nodes
 
 This is intentionally simple: no separate agents until there is a reason to add them.
 
+`lab-um890` has a host-specific kernel command-line override managed by Ansible:
+
+```text
+nvme_core.default_ps_max_latency_us=0
+```
+
+This disables NVMe APST on that host after prior read-only filesystem events
+that looked like intermittent NVMe/controller hangs rather than media wear.
+
 ## Control Plane Endpoint
 
 The inventory currently uses the first server as `api_endpoint`. That is the least magical bootstrap path.

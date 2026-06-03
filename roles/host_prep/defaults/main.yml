@@ -22,6 +22,8 @@ host_prep_kernel_modules:
   - overlay
   - iscsi_tcp
 
+host_prep_kernel_cmdline_args: []
+
 host_prep_sysctl:
   net.bridge.bridge-nf-call-iptables: "1"
   net.bridge.bridge-nf-call-ip6tables: "1"

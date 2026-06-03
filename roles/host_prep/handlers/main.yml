@@ -3,3 +3,7 @@
   ansible.builtin.service:
     name: chrony
     state: restarted
+
+- name: Update grub
+  ansible.builtin.command: update-grub
+  changed_when: true
