@@ -7,7 +7,4 @@ resources:
   - ghcr-pull.sops.yaml
   - deployment.yaml
   - service.yaml
-  - edge-configmap.yaml
-  - edge-deployment.yaml
-  - edge-service.yaml
   - ingress.yaml

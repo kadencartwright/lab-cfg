@@ -4,8 +4,6 @@ kind: Ingress
 metadata:
   name: baby-monitor
   namespace: baby-monitor
-  annotations:
-    tailscale.com/http-endpoint: enabled
 spec:
   ingressClassName: tailscale
   tls:
@@ -19,6 +17,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: baby-monitor-edge
+                name: baby-monitor
                 port:
                   number: 80
