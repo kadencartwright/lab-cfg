@@ -89,6 +89,7 @@ spec:
       enabled: true
       spec:
         replicaCount: 1
+        disableNamespaceMatcher: true
 
     grafana:
       enabled: true
