@@ -1,0 +1,344 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: victoria-metrics-k8s-stack
+  namespace: monitoring
+spec:
+  interval: 30m0s
+  timeout: 15m0s
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: victoria-metrics-k8s-stack
+      version: 0.81.0
+      sourceRef:
+        kind: HelmRepository
+        name: victoriametrics
+        namespace: monitoring
+      interval: 12h0m0s
+  values:
+    fullnameOverride: vm
+
+    defaultRules:
+      enabled: true
+
+    defaultDashboards:
+      enabled: true
+
+    vmsingle:
+      enabled: true
+      spec:
+        retentionPeriod: 30d
+        storage:
+          resources:
+            requests:
+              storage: 20Gi
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
+
+    vmagent:
+      enabled: true
+      spec:
+        scrapeInterval: 30s
+        selectAllByDefault: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+
+    vmalert:
+      enabled: true
+      spec:
+        evaluationInterval: 30s
+        selectAllByDefault: true
+        resources:
+          requests:
+            cpu: 25m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+
+    alertmanager:
+      enabled: true
+      spec:
+        replicaCount: 1
+
+    grafana:
+      enabled: true
+      grafana.ini:
+        auth.anonymous:
+          enabled: true
+          org_role: Admin
+        users:
+          default_theme: system
+      persistence:
+        enabled: false
+      service:
+        type: ClusterIP
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
+
+    kube-state-metrics:
+      enabled: true
+      rbac:
+        extraRules:
+          - apiGroups:
+              - source.toolkit.fluxcd.io
+            resources:
+              - gitrepositories
+              - ocirepositories
+              - buckets
+              - helmcharts
+            verbs:
+              - list
+              - watch
+          - apiGroups:
+              - kustomize.toolkit.fluxcd.io
+            resources:
+              - kustomizations
+            verbs:
+              - list
+              - watch
+          - apiGroups:
+              - helm.toolkit.fluxcd.io
+            resources:
+              - helmreleases
+            verbs:
+              - list
+              - watch
+      customResourceState:
+        enabled: true
+        config:
+          spec:
+            resources:
+              - groupVersionKind:
+                  group: source.toolkit.fluxcd.io
+                  version: v1
+                  kind: GitRepository
+                metricNamePrefix: gotk
+                metrics:
+                  - name: resource_info
+                    help: The current state of a GitOps Toolkit resource.
+                    each:
+                      type: Info
+                      info:
+                        labelsFromPath:
+                          name:
+                            - metadata
+                            - name
+                    labelsFromPath:
+                      exported_namespace:
+                        - metadata
+                        - namespace
+                      ready:
+                        - status
+                        - conditions
+                        - "[type=Ready]"
+                        - status
+                      suspended:
+                        - spec
+                        - suspend
+              - groupVersionKind:
+                  group: kustomize.toolkit.fluxcd.io
+                  version: v1
+                  kind: Kustomization
+                metricNamePrefix: gotk
+                metrics:
+                  - name: resource_info
+                    help: The current state of a GitOps Toolkit resource.
+                    each:
+                      type: Info
+                      info:
+                        labelsFromPath:
+                          name:
+                            - metadata
+                            - name
+                    labelsFromPath:
+                      exported_namespace:
+                        - metadata
+                        - namespace
+                      ready:
+                        - status
+                        - conditions
+                        - "[type=Ready]"
+                        - status
+                      suspended:
+                        - spec
+                        - suspend
+              - groupVersionKind:
+                  group: helm.toolkit.fluxcd.io
+                  version: v2
+                  kind: HelmRelease
+                metricNamePrefix: gotk
+                metrics:
+                  - name: resource_info
+                    help: The current state of a GitOps Toolkit resource.
+                    each:
+                      type: Info
+                      info:
+                        labelsFromPath:
+                          name:
+                            - metadata
+                            - name
+                    labelsFromPath:
+                      exported_namespace:
+                        - metadata
+                        - namespace
+                      ready:
+                        - status
+                        - conditions
+                        - "[type=Ready]"
+                        - status
+                      suspended:
+                        - spec
+                        - suspend
+
+    prometheus-node-exporter:
+      enabled: true
+
+    kubelet:
+      enabled: true
+
+    kubeApiServer:
+      enabled: true
+
+    kubeControllerManager:
+      enabled: true
+
+    kubeScheduler:
+      enabled: true
+
+    kubeProxy:
+      enabled: false
+
+    coreDns:
+      enabled: true
+
+    extraObjects:
+      - apiVersion: operator.victoriametrics.com/v1beta1
+        kind: VMStaticScrape
+        metadata:
+          name: systemd-exporter
+          namespace: monitoring
+        spec:
+          jobName: systemd-exporter
+          targetEndpoints:
+            - targets:
+                - 192.168.32.41:9558
+                - 192.168.32.69:9558
+                - 192.168.32.169:9558
+              labels:
+                service: systemd-exporter
+
+      - apiVersion: operator.victoriametrics.com/v1beta1
+        kind: VMRule
+        metadata:
+          name: lab-alerts
+          namespace: monitoring
+        spec:
+          groups:
+            - name: lab.nodes
+              rules:
+                - alert: LabNodeExporterDown
+                  expr: up{job=~".*node-exporter.*"} == 0
+                  for: 5m
+                  labels:
+                    severity: critical
+                  annotations:
+                    summary: Node exporter is down
+                    description: VictoriaMetrics has not scraped node-exporter for this node for 5 minutes.
+
+                - alert: LabNodeDiskPressure
+                  expr: kube_node_status_condition{condition="DiskPressure",status="true"} == 1
+                  for: 5m
+                  labels:
+                    severity: critical
+                  annotations:
+                    summary: A node reports disk pressure
+                    description: Kubernetes is reporting DiskPressure on this node.
+
+                - alert: LabNodeFilesystemNearlyFull
+                  expr: |
+                    (
+                      node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|nsfs|proc|sysfs|devtmpfs"}
+                      /
+                      node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|nsfs|proc|sysfs|devtmpfs"}
+                    ) < 0.10
+                    and
+                    node_filesystem_readonly{fstype!~"tmpfs|overlay|squashfs|nsfs|proc|sysfs|devtmpfs"} == 0
+                  for: 15m
+                  labels:
+                    severity: warning
+                  annotations:
+                    summary: Filesystem nearly full
+                    description: A node filesystem has less than 10% free space.
+
+            - name: lab.workloads
+              rules:
+                - alert: LabPodCrashLooping
+                  expr: kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} == 1
+                  for: 10m
+                  labels:
+                    severity: warning
+                  annotations:
+                    summary: Pod is crash looping
+                    description: A pod container has been in CrashLoopBackOff for 10 minutes.
+
+                - alert: LabFluxResourceNotReady
+                  expr: gotk_resource_info{ready!="True"} == 1
+                  for: 10m
+                  labels:
+                    severity: warning
+                  annotations:
+                    summary: Flux resource is not ready
+                    description: A Flux GitOps Toolkit resource has not reported Ready=True for 10 minutes.
+
+            - name: lab.borg
+              rules:
+                - alert: LabBorgBackupServiceFailed
+                  expr: systemd_unit_state{name="borg-k3s-etcd-backup.service",state="failed"} == 1
+                  for: 5m
+                  labels:
+                    severity: critical
+                  annotations:
+                    summary: Borg backup service failed
+                    description: systemd reports borg-k3s-etcd-backup.service in failed state.
+
+                - alert: LabBorgBackupTimerInactive
+                  expr: systemd_unit_state{name="borg-k3s-etcd-backup.timer",state="active"} != 1
+                  for: 15m
+                  labels:
+                    severity: warning
+                  annotations:
+                    summary: Borg backup timer inactive
+                    description: systemd reports borg-k3s-etcd-backup.timer is not active.
+
+                - alert: LabBorgBackupTimerStale
+                  expr: |
+                    systemd_timer_last_trigger_seconds{name="borg-k3s-etcd-backup.timer"} > 0
+                    and
+                    time() - systemd_timer_last_trigger_seconds{name="borg-k3s-etcd-backup.timer"} > 28800
+                  for: 15m
+                  labels:
+                    severity: warning
+                  annotations:
+                    summary: Borg backup timer stale
+                    description: The Borg backup timer has not triggered in more than 8 hours.

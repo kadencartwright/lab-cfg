@@ -165,12 +165,13 @@ not a goal right now.
 - [GitOps notes](docs/gitops.md)
 - [Tailscale operator notes](docs/tailscale-operator.md)
 - [Baby monitor deployment notes](docs/baby-monitor.md)
+- [Borg backup notes](docs/borg-backups.md)
+- [K3s restore drill](docs/k3s-restore-drill.md)
+- [Monitoring notes](docs/monitoring.md)
 - [Host discovery notes](docs/discovery.md)
 
 ## Current Roadmap
-- Enable scheduled K3s etcd snapshots.
-- Copy etcd snapshots off-node.
+- Run a destructive K3s restore rehearsal during a maintenance window.
 - Decide on persistent storage policy before adding Longhorn.
 - Move image releases from mutable tags toward immutable tags or digests.
-- Add monitoring and alerting after backup/recovery is documented.
-
+- Add alert notification routing after the metrics stack settles.

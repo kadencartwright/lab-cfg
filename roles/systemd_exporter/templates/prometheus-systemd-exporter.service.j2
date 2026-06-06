@@ -1,0 +1,20 @@
+[Unit]
+Description=Prometheus systemd exporter
+Documentation=https://github.com/prometheus-community/systemd_exporter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/prometheus-systemd-exporter \
+  --web.listen-address={{ systemd_exporter_listen_address }} \
+  --systemd.collector.unit-include={{ systemd_exporter_unit_include }} \
+  --systemd.collector.enable-restart-count
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+ProtectHome=true
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

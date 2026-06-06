@@ -1,0 +1,10 @@
+[Unit]
+Description=Run K3s etcd Borg backup on a schedule
+
+[Timer]
+OnCalendar={{ borg_client_timer_on_calendar }}
+RandomizedDelaySec={{ borg_client_timer_randomized_delay_sec }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

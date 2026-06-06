@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+source {{ borg_client_env_path }}
+export BORG_REPO BORG_RSH BORG_PASSCOMMAND BORG_BASE_DIR BORG_CACHE_DIR BORG_SECURITY_DIR BORG_LOCK_WAIT BORG_RELOCATED_REPO_ACCESS_IS_OK
+
+lock_file=/run/borg-k3s-etcd-backup.lock
+exec 9>"$lock_file"
+flock -n 9
+
+paths=()
+path_count=0
+{% for path in borg_client_backup_paths %}
+if [[ -e "{{ path }}" ]]; then
+  paths+=("{{ path }}")
+  path_count=$((path_count + 1))
+fi
+{% endfor %}
+
+if [[ "$path_count" -eq 0 ]]; then
+  echo "No configured K3s backup paths exist on this host." >&2
+  exit 1
+fi
+
+host_name="$(hostname -s)"
+archive="{{ borg_client_archive_prefix }}-${host_name}-{now:%Y%m%dT%H%M%SZ}"
+
+borg create \
+  --lock-wait "{{ borg_client_lock_wait_seconds }}" \
+  --compression "{{ borg_client_compression }}" \
+  --stats \
+  "::${archive}" \
+  "${paths[@]}"

@@ -4,11 +4,8 @@ kind: Service
 metadata:
   name: whoami
   namespace: whoami
-  annotations:
-    tailscale.com/hostname: whoami
 spec:
-  type: LoadBalancer
-  loadBalancerClass: tailscale
+  type: ClusterIP
   selector:
     app.kubernetes.io/name: whoami
   ports:

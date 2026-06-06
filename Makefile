@@ -3,8 +3,10 @@ ANSIBLE_GALAXY ?= ansible-galaxy
 INVENTORY ?= inventories/lab/hosts.yml
 VAULT_PASSWORD_FILE ?= .secrets/ansible-vault-password
 VAULT_ARGS := $(shell test -f $(VAULT_PASSWORD_FILE) && printf -- '--vault-password-file %s' '$(VAULT_PASSWORD_FILE)')
+BORG_ANSIBLE_USER ?= lab
+HOST_METRICS_ANSIBLE_USER ?= lab
 
-.PHONY: collections ping sudo-check check prep site upgrade secrets-scan tailscale-secret ghcr-pull-secret baby-monitor-secret
+.PHONY: collections ping sudo-check check prep site upgrade borg-backup systemd-exporter secrets-scan tailscale-secret ghcr-pull-secret baby-monitor-secret
 
 collections:
 	$(ANSIBLE_GALAXY) collection install -r requirements.yml -p .ansible/collections
@@ -26,6 +28,12 @@ site:
 
 upgrade:
 	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/upgrade.yml
+
+borg-backup:
+	ANSIBLE_VARS_ENABLED= $(ANSIBLE_PLAYBOOK) -i $(INVENTORY) -u $(BORG_ANSIBLE_USER) playbooks/borg-backup.yml
+
+systemd-exporter:
+	ANSIBLE_VARS_ENABLED= $(ANSIBLE_PLAYBOOK) -i $(INVENTORY) -u $(HOST_METRICS_ANSIBLE_USER) playbooks/systemd-exporter.yml
 
 secrets-scan:
 	pre-commit run gitleaks --all-files

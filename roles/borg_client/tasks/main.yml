@@ -1,0 +1,110 @@
+---
+- name: Require BorgBase SSH private key source
+  ansible.builtin.stat:
+    path: "{{ borg_client_ssh_private_key_src }}"
+  delegate_to: localhost
+  become: false
+  register: borg_client_ssh_key_src_stat
+
+- name: Require BorgBase passphrase source
+  ansible.builtin.stat:
+    path: "{{ borg_client_passphrase_src }}"
+  delegate_to: localhost
+  become: false
+  register: borg_client_passphrase_src_stat
+
+- name: Assert BorgBase local secrets exist
+  ansible.builtin.assert:
+    that:
+      - borg_client_ssh_key_src_stat.stat.exists
+      - borg_client_passphrase_src_stat.stat.exists
+    fail_msg: "Missing BorgBase local secrets under .secrets/. Generate keys and passphrase before applying borg_client."
+
+- name: Install Borg client packages
+  ansible.builtin.apt:
+    name: "{{ borg_client_package_names }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create Borg directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ borg_client_config_dir }}"
+      mode: "0700"
+    - path: "{{ borg_client_state_dir }}"
+      mode: "0700"
+    - path: "{{ borg_client_cache_dir }}"
+      mode: "0700"
+
+- name: Install BorgBase SSH private key
+  ansible.builtin.copy:
+    content: "{{ lookup('file', borg_client_ssh_private_key_src) }}\n"
+    dest: "{{ borg_client_ssh_private_key_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Install Borg passphrase
+  ansible.builtin.copy:
+    content: "{{ lookup('file', borg_client_passphrase_src) | trim }}\n"
+    dest: "{{ borg_client_passphrase_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Install BorgBase known_hosts
+  ansible.builtin.copy:
+    content: "{{ borg_client_known_host }}\n"
+    dest: "{{ borg_client_known_hosts_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install Borg environment file
+  ansible.builtin.template:
+    src: lab.env.j2
+    dest: "{{ borg_client_env_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Install K3s etcd Borg backup script
+  ansible.builtin.template:
+    src: borg-k3s-etcd-backup.j2
+    dest: "{{ borg_client_backup_script_path }}"
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Install Borg backup systemd service
+  ansible.builtin.template:
+    src: borg-k3s-etcd-backup.service.j2
+    dest: /etc/systemd/system/borg-k3s-etcd-backup.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Install Borg backup systemd timer
+  ansible.builtin.template:
+    src: borg-k3s-etcd-backup.timer.j2
+    dest: /etc/systemd/system/borg-k3s-etcd-backup.timer
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Enable Borg backup timer
+  ansible.builtin.systemd:
+    name: borg-k3s-etcd-backup.timer
+    enabled: "{{ borg_client_timer_enabled }}"
+    state: "{{ borg_client_timer_enabled | ternary('started', 'stopped') }}"
+    daemon_reload: true

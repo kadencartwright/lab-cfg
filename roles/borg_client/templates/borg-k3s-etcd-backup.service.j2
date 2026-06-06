@@ -1,0 +1,11 @@
+[Unit]
+Description=Back up K3s etcd snapshots to BorgBase
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart={{ borg_client_backup_script_path }}
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

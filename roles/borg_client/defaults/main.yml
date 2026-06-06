@@ -1,0 +1,33 @@
+---
+borg_client_package_names:
+  - borgbackup
+  - openssh-client
+
+borg_client_repo: ssh://w2z0usc7@w2z0usc7.repo.borgbase.com/./repo
+borg_client_host: w2z0usc7.repo.borgbase.com
+borg_client_known_host: "w2z0usc7.repo.borgbase.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGU0mISTyHBw9tBs6SuhSq8tvNM8m9eifQxM+88TowPO"
+
+borg_client_ssh_private_key_src: "{{ playbook_dir }}/../.secrets/borgbase_lab_ed25519"
+borg_client_passphrase_src: "{{ playbook_dir }}/../.secrets/borgbase_passphrase"
+
+borg_client_config_dir: /etc/borg
+borg_client_state_dir: /var/lib/borg
+borg_client_cache_dir: /var/cache/borg
+borg_client_ssh_private_key_path: "{{ borg_client_config_dir }}/borgbase_lab_ed25519"
+borg_client_passphrase_path: "{{ borg_client_config_dir }}/passphrase"
+borg_client_known_hosts_path: "{{ borg_client_config_dir }}/known_hosts"
+borg_client_env_path: "{{ borg_client_config_dir }}/lab.env"
+borg_client_backup_script_path: /usr/local/sbin/borg-k3s-etcd-backup
+
+borg_client_archive_prefix: k3s-etcd
+borg_client_compression: zstd,6
+borg_client_lock_wait_seconds: 900
+borg_client_timer_enabled: true
+borg_client_timer_on_calendar: "*-*-* 00/6:35:00"
+borg_client_timer_randomized_delay_sec: 30m
+
+borg_client_backup_paths:
+  - /var/lib/rancher/k3s/server/db/snapshots
+  - /etc/rancher/k3s
+  - /var/lib/rancher/k3s/server/token
+  - /var/lib/rancher/k3s/server/node-token

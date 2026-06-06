@@ -1,0 +1,5 @@
+---
+systemd_exporter_package_name: prometheus-systemd-exporter
+systemd_exporter_service_name: prometheus-systemd-exporter
+systemd_exporter_listen_address: ":9558"
+systemd_exporter_unit_include: "borg-k3s-etcd-backup\\.(service|timer)"
