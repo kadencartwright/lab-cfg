@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+oauth_secret_file="$repo_root/clusters/lab/infrastructure/tailscale-operator/operator-oauth.sops.yaml"
+sops_bin="${SOPS_BIN:-$repo_root/.tools/bin/sops}"
+age_key_file="${SOPS_AGE_KEY_FILE:-$repo_root/.secrets/age.key}"
+authkey_file="$repo_root/.secrets/tailscale-host-authkey"
+metadata_file="$repo_root/.secrets/tailscale-host-authkey-metadata.json"
+tailnet="${TAILSCALE_TAILNET:--}"
+tag="${TAILSCALE_HOST_TAG:-tag:k8s}"
+expiry_seconds="${TAILSCALE_HOST_AUTHKEY_EXPIRY_SECONDS:-86400}"
+description="${TAILSCALE_HOST_AUTHKEY_DESCRIPTION:-lab host tailscale ansible}"
+
+if [[ ! -x "$sops_bin" ]]; then
+  echo "sops not found at $sops_bin" >&2
+  exit 1
+fi
+
+if [[ ! -f "$age_key_file" ]]; then
+  echo "age key not found at $age_key_file" >&2
+  exit 1
+fi
+
+if [[ ! -f "$oauth_secret_file" ]]; then
+  echo "OAuth secret not found at $oauth_secret_file" >&2
+  exit 1
+fi
+
+oauth_json="$(
+  SOPS_AGE_KEY_FILE="$age_key_file" "$sops_bin" --decrypt "$oauth_secret_file" |
+    python3 -c 'import json, sys, yaml; print(json.dumps(yaml.safe_load(sys.stdin)["stringData"]))'
+)"
+client_id="$(printf '%s' "$oauth_json" | jq -r '.client_id')"
+client_secret="$(printf '%s' "$oauth_json" | jq -r '.client_secret')"
+
+token="$(
+  curl -fsS \
+    -u "${client_id}:${client_secret}" \
+    -d "grant_type=client_credentials" \
+    -d "scope=auth_keys" \
+    -d "tags=${tag}" \
+    https://api.tailscale.com/api/v2/oauth/token |
+    jq -r '.access_token'
+)"
+
+payload="$(
+  jq -n \
+    --arg description "$description" \
+    --arg tag "$tag" \
+    --argjson expirySeconds "$expiry_seconds" \
+    '{
+      description: $description,
+      expirySeconds: $expirySeconds,
+      capabilities: {
+        devices: {
+          create: {
+            reusable: true,
+            ephemeral: false,
+            preauthorized: true,
+            tags: [$tag]
+          }
+        }
+      }
+    }'
+)"
+
+response="$(
+  curl -fsS \
+    -H "Authorization: Bearer ${token}" \
+    -H "Content-Type: application/json" \
+    -d "$payload" \
+    "https://api.tailscale.com/api/v2/tailnet/${tailnet}/keys"
+)"
+
+authkey="$(printf '%s' "$response" | jq -r '.key')"
+if [[ "$authkey" != tskey-auth-* ]]; then
+  echo "Tailscale API did not return an auth key" >&2
+  exit 1
+fi
+
+umask 077
+printf '%s\n' "$authkey" > "$authkey_file"
+printf '%s\n' "$response" |
+  jq '{id, description, created, expires, capabilities: .capabilities.devices.create | {reusable, ephemeral, preauthorized, tags}}' > "$metadata_file"
+
+echo "Created $authkey_file"
+jq -c '{id, expires, capabilities}' "$metadata_file"

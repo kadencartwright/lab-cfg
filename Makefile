@@ -5,8 +5,9 @@ VAULT_PASSWORD_FILE ?= .secrets/ansible-vault-password
 VAULT_ARGS := $(shell test -f $(VAULT_PASSWORD_FILE) && printf -- '--vault-password-file %s' '$(VAULT_PASSWORD_FILE)')
 BORG_ANSIBLE_USER ?= lab
 HOST_METRICS_ANSIBLE_USER ?= lab
+TAILSCALE_ANSIBLE_USER ?= lab
 
-.PHONY: collections ping sudo-check check prep site upgrade borg-backup systemd-exporter secrets-scan tailscale-secret ghcr-pull-secret baby-monitor-secret
+.PHONY: collections ping sudo-check check prep site upgrade borg-backup systemd-exporter tailscale-host-authkey tailscale-hosts tailnet-kubeconfig secrets-scan tailscale-secret ghcr-pull-secret baby-monitor-secret
 
 collections:
 	$(ANSIBLE_GALAXY) collection install -r requirements.yml -p .ansible/collections
@@ -34,6 +35,15 @@ borg-backup:
 
 systemd-exporter:
 	ANSIBLE_VARS_ENABLED= $(ANSIBLE_PLAYBOOK) -i $(INVENTORY) -u $(HOST_METRICS_ANSIBLE_USER) playbooks/systemd-exporter.yml
+
+tailscale-host-authkey:
+	scripts/create-tailscale-host-authkey
+
+tailscale-hosts:
+	ANSIBLE_VARS_ENABLED= $(ANSIBLE_PLAYBOOK) -i $(INVENTORY) -u $(TAILSCALE_ANSIBLE_USER) playbooks/tailscale-hosts.yml
+
+tailnet-kubeconfig:
+	scripts/create-tailnet-kubeconfig
 
 secrets-scan:
 	pre-commit run gitleaks --all-files

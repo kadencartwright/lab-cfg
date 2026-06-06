@@ -164,6 +164,7 @@ not a goal right now.
 - [Architecture notes](docs/architecture.md)
 - [GitOps notes](docs/gitops.md)
 - [Tailscale operator notes](docs/tailscale-operator.md)
+- [Host Tailscale notes](docs/tailscale-hosts.md)
 - [Baby monitor deployment notes](docs/baby-monitor.md)
 - [Borg backup notes](docs/borg-backups.md)
 - [K3s restore drill](docs/k3s-restore-drill.md)

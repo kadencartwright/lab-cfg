@@ -1,0 +1,85 @@
+---
+- name: Assert supported host OS
+  ansible.builtin.assert:
+    that:
+      - ansible_facts["os_family"] == "Debian"
+      - ansible_facts["distribution"] == "Ubuntu"
+    fail_msg: "tailscale_host currently supports Ubuntu hosts."
+
+- name: Check local Tailscale auth key
+  ansible.builtin.stat:
+    path: "{{ tailscale_host_authkey_src }}"
+  delegate_to: localhost
+  become: false
+  register: tailscale_host_authkey_stat
+
+- name: Assert local Tailscale auth key exists
+  ansible.builtin.assert:
+    that:
+      - tailscale_host_authkey_stat.stat.exists
+    fail_msg: "Missing .secrets/tailscale-host-authkey. Generate an auth key before applying tailscale_host."
+
+- name: Install Tailscale apt key
+  ansible.builtin.get_url:
+    url: "{{ tailscale_host_apt_key_url }}"
+    dest: "{{ tailscale_host_apt_key_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install Tailscale apt repository
+  ansible.builtin.deb822_repository:
+    name: tailscale
+    types: deb
+    uris: "{{ tailscale_host_apt_repo_url }}"
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: main
+    signed_by: "{{ tailscale_host_apt_key_path }}"
+    state: present
+
+- name: Install Tailscale
+  ansible.builtin.apt:
+    name: "{{ tailscale_host_package_name }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Enable tailscaled
+  ansible.builtin.systemd:
+    name: tailscaled
+    enabled: true
+    state: started
+
+- name: Check Tailscale state
+  ansible.builtin.command: tailscale status --json
+  register: tailscale_host_status
+  changed_when: false
+  failed_when: false
+
+- name: Parse Tailscale state
+  ansible.builtin.set_fact:
+    tailscale_host_backend_state: "{{ (tailscale_host_status.stdout | default('{}') | from_json).BackendState | default('') }}"
+  when: tailscale_host_status.rc == 0 and tailscale_host_status.stdout | length > 0
+
+- name: Authenticate Tailscale
+  ansible.builtin.command:
+    argv:
+      - tailscale
+      - up
+      - "--auth-key={{ lookup('file', tailscale_host_authkey_src) | trim }}"
+      - "--hostname={{ tailscale_host_hostname }}"
+      - "--accept-dns={{ tailscale_host_accept_dns | ternary('true', 'false') }}"
+      - "--ssh={{ tailscale_host_enable_ssh | ternary('true', 'false') }}"
+  no_log: true
+  when: tailscale_host_backend_state | default('') != "Running"
+
+- name: Verify Tailscale is running
+  ansible.builtin.command: tailscale status --json
+  register: tailscale_host_verify
+  changed_when: false
+
+- name: Assert Tailscale is running
+  ansible.builtin.assert:
+    that:
+      - (tailscale_host_verify.stdout | from_json).BackendState == "Running"
+    fail_msg: "Tailscale did not reach Running state."
