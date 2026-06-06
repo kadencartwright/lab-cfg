@@ -1,0 +1,24 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: baby-monitor
+  namespace: baby-monitor
+  annotations:
+    tailscale.com/http-endpoint: enabled
+spec:
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - baby-monitor
+  rules:
+    - host: baby-monitor
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: baby-monitor-edge
+                port:
+                  number: 80

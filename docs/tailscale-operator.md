@@ -13,6 +13,32 @@ Update the tailnet policy to include these tags:
 }
 ```
 
+If using `ProxyGroup`-backed ingress, add policy that lets `tag:k8s`
+devices advertise Tailscale Services and lets tailnet users reach them:
+
+```json
+"autoApprovers": {
+  "services": {
+    "tag:k8s": ["tag:k8s"]
+  }
+},
+"grants": [
+  {
+    "src": ["autogroup:member"],
+    "dst": ["tag:k8s"],
+    "ip": ["tcp:80", "tcp:443"]
+  },
+  {
+    "src": ["autogroup:member"],
+    "dst": ["tag:k8s:*"],
+    "ip": ["icmp:*"]
+  }
+]
+```
+
+The `ProxyGroup` path is required when a Tailscale Ingress needs an HTTP
+endpoint on port 80, for example to redirect plain HTTP to HTTPS.
+
 Create a Tailscale OAuth client in the admin console with:
 
 - `Devices Core` write scope
