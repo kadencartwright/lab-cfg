@@ -5,6 +5,8 @@ resources:
   - namespace.yaml
   - grafana-admin.sops.yaml
   - grafana-helm-values.sops.yaml
+  - alertmanager-ntfy.sops.yaml
   - helmrepository.yaml
   - helmrelease.yaml
   - grafana-ingress.yaml
+  - alertmanager-ntfy.yaml

@@ -1,0 +1,22 @@
+apiVersion: v1
+data:
+    webhook-url: ENC[AES256_GCM,data:7tCIRMlKC8B+3UoQUEubxA5SPfFlUCCodv8v8ZuN48g/yvHuT/Ko6/tQuq4JVoO40ayoCH2BhwseCmYbDoIp9pnMYhrYBG+38BfsvG/mrR7lKops049JVxQyCUniYNuN4PxJChuKpd8xrY99,iv:mEuFDsIuUBia7yGTljIT4ireE8uiZqx8EeTYPod6LYU=,tag:Qge7YXlEgNBX4n+Dt+LDlw==,type:str]
+kind: Secret
+metadata:
+    name: alertmanager-ntfy
+    namespace: monitoring
+sops:
+    age:
+        - recipient: age18sl2qhm4ja8l2q22t7h6ktmlz2zvc32mmj9ezeqt42f40g4crdpsrfyy09
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBzVzhZUEJZdzZjTUlML2xY
+            MFI3ZTB3dHNFY0VoRldHalBRQ2xkcTNtZkdBCkJhclM1TUdlQkNmZlV0Q0s1dFdV
+            WjRSM096UFpyZ1h4WjdycFpMWTkra0UKLS0tICt3R0k5b205cFFXRTByWDdWYTU2
+            K1dIV2YvYTJPWG1Za0tUQ0tWY2U4S00KyWkzFclCCFshwfYk/5LUxgORZmkcOVyZ
+            /7pTAlQXGe4sqkdw/Y8vLq0GHPxNo7TFpoW0rTVZWtca6lZm+v9Wew==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-06-06T23:47:55Z"
+    mac: ENC[AES256_GCM,data:9Fl5Y15mRbElqT8WB9TQA58dqGZE8PSoEFlNCNtnvDTO9VMpqk/0gC22BC9FxZQ6QzzsSBh8LRzV4A1IkXesbYEpBQKe2KnvadDj6mKzQ/PIuOeE3XCSv5gqdvib84rzJ6ESBCYUwFKHS5EDzvwGRXLT/R/fSceQWbzIBb2GMdI=,iv:lyl8Mj8HPdnxFRVtS5qkGFOSAXd/eCs8Tah7ilc+wnw=,tag:BejhHOtIRb2O/g7FYCPLGg==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.10.2

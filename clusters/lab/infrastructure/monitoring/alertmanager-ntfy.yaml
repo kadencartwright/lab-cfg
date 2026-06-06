@@ -1,0 +1,24 @@
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMAlertmanagerConfig
+metadata:
+  name: lab-ntfy
+  namespace: monitoring
+spec:
+  route:
+    receiver: ntfy
+    group_by:
+      - alertname
+      - namespace
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 6h
+    matchers:
+      - alertname=~"Lab.*"
+  receivers:
+    - name: ntfy
+      webhook_configs:
+        - send_resolved: true
+          url_secret:
+            name: alertmanager-ntfy
+            key: webhook-url
