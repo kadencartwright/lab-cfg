@@ -1,0 +1,57 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: rustfs
+  namespace: rustfs
+spec:
+  interval: 30m0s
+  timeout: 10m0s
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: rustfs
+      version: 0.7.0
+      sourceRef:
+        kind: HelmRepository
+        name: rustfs
+        namespace: rustfs
+      interval: 12h0m0s
+  values:
+    fullnameOverride: rustfs
+    replicaCount: 1
+    mode:
+      standalone:
+        enabled: true
+      distributed:
+        enabled: false
+    secret:
+      existingSecret: rustfs-credentials
+    config:
+      rustfs:
+        region: us-east-1
+        obs_environment: lab
+        log_level: info
+    ingress:
+      enabled: false
+    service:
+      type: ClusterIP
+      endpoint:
+        port: 9000
+      console:
+        port: 9001
+    storageclass:
+      name: local-path
+      dataStorageSize: 100Gi
+      logStorageSize: 1Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 1Gi

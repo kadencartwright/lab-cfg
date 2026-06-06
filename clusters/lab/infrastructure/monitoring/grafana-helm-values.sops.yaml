@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: grafana-helm-values
+    namespace: monitoring
+stringData:
+    values.yaml: ENC[AES256_GCM,data:UMOcrKouUljQ6AyRuSv2s4kJgF9pQRJ/CRzpxZa8TK5GKDxARp05iu9pVcxfZ90qkn7sKtOFDagjhx+SH911ndNqfOHUWuZ5O5+KJpu+8M4iKVXDQDx20KAgOa0o7gV/R3PfqZJuqU0DXEpuIUU7DBnyhs5am6onZItbia8eSixH/qQ1LYrJCC9BMPcOBqzUG4pJ,iv:TGCblkzaH8+mZO1fCPeBll0UIPRI9lX1rp72L+NyMHc=,tag:l+CfClBNBfoN9e5XPRcHAw==,type:str]
+sops:
+    age:
+        - recipient: age18sl2qhm4ja8l2q22t7h6ktmlz2zvc32mmj9ezeqt42f40g4crdpsrfyy09
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBvbEJWSXBSK1BNOENlbStk
+            UDJrTTBMeUhlUFN5M0F1aVYrSkNoQ1BMZTIwCm8yeHdqZDhhYUFWWEYwWHVZSWhi
+            b2JhbVlwSm1RdzlWR0dNeFExTTZuSncKLS0tIFFlS2dnOGpaQ2RYUVBkR3dWV0J3
+            RjM3MjJod3RjcmdDWnlldEwwbks4ck0KSChxre+MevTdwsv6tJNXH14l+/HRhOQ2
+            pdiX+/XF69MWMrJBVcUQpakHLWm9vz/20nQH5s9KDXnw1nVYoXqOMg==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-06-06T21:48:26Z"
+    mac: ENC[AES256_GCM,data:/8Jij+2KVq0ni+u9O5XH83d4tYyMesIiu4tNcfx0i+0m2CPtZ1UY3HcIrumypUGt2PbQ1mixD7722zzuzDpv2aaMJ3ZX/6ZRxID68PqX5rkWh0gFyrMoDROpKlFi3/yaRmuYEf/Eb09D+7TqwBJxUIlDNSb9svzTM9Mt1ctYPq8=,iv:98hHBFmulEE8GATUSgMNSWbFHj9lgTmeULnZpPKzAho=,tag:ww3w9zIUqWTtWAtiKdmn6w==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.10.2

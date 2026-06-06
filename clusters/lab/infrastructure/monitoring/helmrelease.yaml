@@ -24,6 +24,10 @@ spec:
         name: victoriametrics
         namespace: monitoring
       interval: 12h0m0s
+  valuesFrom:
+    - kind: Secret
+      name: grafana-helm-values
+      valuesKey: values.yaml
   values:
     fullnameOverride: vm
 
@@ -80,9 +84,10 @@ spec:
     grafana:
       enabled: true
       grafana.ini:
+        auth:
+          disable_login_form: false
         auth.anonymous:
-          enabled: true
-          org_role: Admin
+          enabled: false
         users:
           default_theme: system
       persistence:

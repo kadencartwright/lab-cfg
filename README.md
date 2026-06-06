@@ -168,6 +168,7 @@ not a goal right now.
 - [Borg backup notes](docs/borg-backups.md)
 - [K3s restore drill](docs/k3s-restore-drill.md)
 - [Monitoring notes](docs/monitoring.md)
+- [Object storage notes](docs/object-storage.md)
 - [Host discovery notes](docs/discovery.md)
 
 ## Current Roadmap

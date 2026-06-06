@@ -31,9 +31,22 @@ Grafana is exposed only through Tailscale:
 https://grafana-lab.bleak-banana.ts.net
 ```
 
-Grafana anonymous admin access is enabled for this first private-tailnet pass.
-Replace this with a SOPS-managed admin secret before exposing Grafana anywhere
-outside the tailnet.
+Grafana requires login. The local generated admin material lives in:
+
+```text
+.secrets/grafana-admin.env
+```
+
+The cluster receives the credential through SOPS-encrypted manifests:
+
+```text
+clusters/lab/infrastructure/monitoring/grafana-admin.sops.yaml
+clusters/lab/infrastructure/monitoring/grafana-helm-values.sops.yaml
+```
+
+`grafana-helm-values.sops.yaml` feeds `HelmRelease.spec.valuesFrom`, which lets
+Helm set Grafana's generated admin Secret without committing the password in
+plaintext.
 
 ## Host systemd Metrics
 
