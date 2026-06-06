@@ -35,13 +35,13 @@ spec:
       enabled: true
       groups:
         etcd:
-          create: false
+          enabled: false
         kubeScheduler:
-          create: false
+          enabled: false
         kubernetesSystemControllerManager:
-          create: false
+          enabled: false
         kubernetesSystemScheduler:
-          create: false
+          enabled: false
 
     defaultDashboards:
       enabled: true
