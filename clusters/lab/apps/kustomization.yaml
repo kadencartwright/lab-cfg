@@ -4,5 +4,4 @@ kind: Kustomization
 resources:
   - baby-monitor
   - forgejo
-  - kasm
   - whoami
