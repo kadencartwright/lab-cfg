@@ -19,5 +19,7 @@ spec:
       owner: kasmapp
       secret:
         name: kasm-db-app
+      postInitSQL:
+        - CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
   monitoring:
     enablePodMonitor: false
