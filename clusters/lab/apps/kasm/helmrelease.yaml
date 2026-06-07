@@ -29,6 +29,14 @@ spec:
     proxyService:
       type: ClusterIP
 
+    components:
+      guac:
+        enabled: false
+      rdpGateway:
+        enabled: false
+      rdpHttpsGateway:
+        enabled: false
+
     ingress:
       enabled: true
       tls: true
