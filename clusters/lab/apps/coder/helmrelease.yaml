@@ -1,0 +1,54 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: coder
+  namespace: coder
+spec:
+  interval: 30m0s
+  timeout: 15m0s
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: coder
+      version: 2.34.0
+      sourceRef:
+        kind: HelmRepository
+        name: coder
+        namespace: coder
+      interval: 12h0m0s
+  values:
+    coder:
+      envUseClusterAccessURL: false
+      env:
+        - name: CODER_ACCESS_URL
+          value: https://coder.bleak-banana.ts.net
+        - name: CODER_OAUTH2_GITHUB_DEFAULT_PROVIDER_ENABLE
+          value: "false"
+        - name: CODER_PG_CONNECTION_URL
+          valueFrom:
+            secretKeyRef:
+              name: coder-db-url
+              key: url
+      service:
+        type: ClusterIP
+      ingress:
+        enable: true
+        className: tailscale
+        host: coder
+        tls:
+          enable: true
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          memory: 1Gi
+      serviceAccount:
+        workspacePerms: true
+        enableDeployments: true

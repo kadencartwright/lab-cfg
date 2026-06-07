@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: coder-db-url
+    namespace: coder
+type: Opaque
+stringData:
+    url: ENC[AES256_GCM,data:illY6yTafYdQqwR6E70sZdhWzgEX10JQ828NjXBF9mnFF8c8rrxyIkV2N7dAdwjn+B604ioMDCSzWDFyZhrJQCaZfVLszkhU4EMUSIEfRmnT5jbuxDHWsZQF8UvW6maW,iv:7SCWHOh7Wn21e8PgekKMgZtDsa+M8UQduk/2eE5UJQs=,tag:ZUn4FVniByWr4yY0ZHaC0A==,type:str]
+sops:
+    age:
+        - recipient: age18sl2qhm4ja8l2q22t7h6ktmlz2zvc32mmj9ezeqt42f40g4crdpsrfyy09
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB2WXhFMHBDZzFxK1p2WFh6
+            VlhEbkV2czNsS2Z1ZnNQMUJjOWlLdjJEL2lrCkFvTjFhNE51dEtkd2d2d01xWHR1
+            L3VwZ3BBY2RXTW1mOHBZR2NiV3JJK3MKLS0tIDZZNmdzVU1rQnlxQmhsYTZnOVRH
+            ZVQycld1aWdBYzNYSHVNazcrZkw5dHMKkm5lrf3q3yAD6/YVFTVu0hLWaW93o/5U
+            QL5oHjTNhso02oVTfdejreX1ASOfpgWgBEB8JY/L6B5faixCDPaEig==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-06-07T01:24:11Z"
+    mac: ENC[AES256_GCM,data:4E48m6yrG4MGkKbCLUKmhCmiDEsbxIHLXQ9YerdrIJMp4ijcCoUtVImr6pXmj0S4MRilNv3FO0K9tuWXiHMMstTXtLidQCAMmpeCfTnOgj2zN1tHZrfu2N+j9yU8zpveUcHw32ESsHfuOb6yoR4roxv7qw6dWMhsT+CAhCCWEZs=,iv:+P36n078qFVNpv6dOJdEoF+PaUOuaMG8jxHXOnYxPm8=,tag:Fj3bo5zSLSrghr+lSNCpYQ==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.10.2

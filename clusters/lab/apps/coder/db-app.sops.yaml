@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: coder-db-app
+    namespace: coder
+type: kubernetes.io/basic-auth
+stringData:
+    username: ENC[AES256_GCM,data:11YLFEs=,iv:BK+n0VZqUIZn0/YDPFJrIJFJMfkV7fU48bGYdEE611c=,tag:Z6kfeu1PLQSgLu/fm+7Mkw==,type:str]
+    password: ENC[AES256_GCM,data:U9hO1vU9DCJrv/rnNglzrwN4heKqoipN3kBT46z5fIIJs3KP0EGGIg==,iv:l+hFj6dk8kmP25z32PyLm7+Sym9wb/lfuzh15fnqjow=,tag:nhOEgxCyvleuFXbpalsrXA==,type:str]
+sops:
+    age:
+        - recipient: age18sl2qhm4ja8l2q22t7h6ktmlz2zvc32mmj9ezeqt42f40g4crdpsrfyy09
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBvQiszWUpsWVppdVdaRXg3
+            MGFXemh2SWRmRnE4VXpDRTRTaWJONlVyZ1NJCm1MUVQvYmhrTWFDaHhoNm5HVkZH
+            Wk5GQmtYUUZPODBZMFRCd0pFZjJGNk0KLS0tIHpkbEJZYnB2T0ljYXpRWDJlakd2
+            YjVNSkVZODN2aTZNdzltaVdvQ1kwTW8K07DY8eFF01FY/XmzFnzPMJRpJ1kGeqAJ
+            bdtsHchWR7ykvbaxiAuUG4X4iXHOJ6TDuhDQJeLnfzKq2Pq7RlxrBQ==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-06-07T01:24:11Z"
+    mac: ENC[AES256_GCM,data:XGn0OS3G9WgIpphe5BNcW7GEw7NSAKdDLoDZ+US9XtyHQMb4wq8S+JOlWEfKKYpLnXecHG2GTMqyQpOewFNKJ0fVFSn/JN+NGXEJ3d9RIFYr8Gekdn7dHPr7S95l27E7FbrA50uWQ+F2VGfboeBb1i1osIk1wI3ge/jlRbG1478=,iv:GhT9jnAX8X8vtpD/w2vWXNExuJWfUpU8xZkGT4mxRgI=,tag:MU0xuLH5bGLQw8YlthDIjQ==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.10.2
