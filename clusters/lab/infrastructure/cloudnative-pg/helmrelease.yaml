@@ -28,8 +28,5 @@ spec:
     replicaCount: 1
     monitoring:
       grafanaDashboard:
-        create: true
-        namespace: monitoring
-        labels:
-          grafana_dashboard: "1"
+        create: false
       podMonitorEnabled: false
