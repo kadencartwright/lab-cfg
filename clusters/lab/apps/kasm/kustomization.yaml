@@ -5,6 +5,7 @@ resources:
   - namespace.yaml
   - db-app.sops.yaml
   - db-superuser.sops.yaml
+  - proxy-tls.sops.yaml
   - postgres-cluster.yaml
   - helmrepository.yaml
   - helmrelease.yaml

@@ -26,6 +26,9 @@ spec:
     deploymentSize: small
     publicAddr: kasm.bleak-banana.ts.net
 
+    certificate:
+      secretName: kasm-proxy-tls
+
     proxyService:
       type: ClusterIP
 
