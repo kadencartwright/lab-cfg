@@ -41,7 +41,7 @@ spec:
         enabled: false
 
     ingress:
-      enabled: true
+      enabled: false
       tls: true
       backendProtocol: http
       ingressClassName: tailscale

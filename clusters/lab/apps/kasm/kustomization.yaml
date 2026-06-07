@@ -9,3 +9,4 @@ resources:
   - postgres-cluster.yaml
   - helmrepository.yaml
   - helmrelease.yaml
+  - ingress.yaml
