@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: kasm-db-superuser
+    namespace: kasm
+type: kubernetes.io/basic-auth
+stringData:
+    username: ENC[AES256_GCM,data:55lyo3N76W0=,iv:Nh0DcD7weI4/CWHDq5HmLVLsrK+Ru1Io/KQ6LOtogBY=,tag:6SvU4QoZSZ/rBuy1aR66Yw==,type:str]
+    password: ENC[AES256_GCM,data:OTciF2h+9H6SaYWlpWFk5TCvU2RXQ1xtumuwoAo4sVGByseBMZNWDA==,iv:hn6agTjTfb2RluE6Y5+kA+wrP2Jd8s8olgIJbgAREZE=,tag:k3uFiMvhKShfOleFvKAJbA==,type:str]
+sops:
+    age:
+        - recipient: age18sl2qhm4ja8l2q22t7h6ktmlz2zvc32mmj9ezeqt42f40g4crdpsrfyy09
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBXODUxcmZNRTZ1aEdHamFl
+            MTA1QkNGUzVhckNqRlF0SkJmVGx4bFJFdEg0CkY0UlRwOStCR3lSRVpwZWxmNDcy
+            M2l1OUJtbGg3dnBFdWlWSGxYZllxamsKLS0tIExsSVRlQ09oM1N5TUdodzQxeGJu
+            N3lmaFl2UzNwK3FvR0txbUpOK0lqNHMKSuU2Kj+Y1oa/JAYipg+/ZpPtivCrMfbL
+            dsBk1Tui6qCtoYU15AJSyzY23KGN6muxE/XKG4apIbzk0jDiiKScGA==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-06-07T00:40:39Z"
+    mac: ENC[AES256_GCM,data:E3tc6EmPLwshNKqbhBlB5jlHHiZNZljnnRrmUimeQdeuDOtvXDuhgeNzL2r8h25rQ9fkGrNYc+jgOvwmAjf13PeZORV5yHjK1TEPehL5LJi8L38rryzZcvEDuFqgLpoDTorQuMbVHosfLZeNJW9+ofUwNl8M80R8mMXR9khZZT4=,iv:41n/9GUdMafkDgwPO56l+P7EP2v3GID5JeZBRdKqe+Y=,tag:jjTYmO9cw1LugIRO5abqkA==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.10.2

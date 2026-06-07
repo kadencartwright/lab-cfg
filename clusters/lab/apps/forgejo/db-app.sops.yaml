@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: forgejo-db-app
+    namespace: forgejo
+type: kubernetes.io/basic-auth
+stringData:
+    username: ENC[AES256_GCM,data:ta9WTKSNFg==,iv:gRMWnN0UbMbtezWmMOLc/+wfF3OJAR2Xif40Rge1NNk=,tag:ED65A2q4ATU4nzdgmcaVnA==,type:str]
+    password: ENC[AES256_GCM,data:Rc9S4FprBecGnVwWiXGLF6wGoc3ZzraGTU5LiPSmnkX0acJU3zqziQ==,iv:0X2ClSSE1vFXEUBIf6hvEo9WXD3sEeBomlep526FaXI=,tag:2/uQHYoZE1X9bqa6zUiHRQ==,type:str]
+sops:
+    age:
+        - recipient: age18sl2qhm4ja8l2q22t7h6ktmlz2zvc32mmj9ezeqt42f40g4crdpsrfyy09
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBTcmh4bTBEVmMxU25LQzg3
+            Y1lXdkw4b0FoUlU2VGVPb3ZqTjU5OXNCSzF3Cm4rZktxYW4vaXhWbnhLTGMvL0xl
+            dWNGRm1Yb2FpTHYwK3VOQ3pneUFOSFkKLS0tIGFMbUw1RThBUmEzc2dGYmRubWJD
+            TDF6OXVkOXE5QlNyOFZQWEZTM0JaTGcK578EcGoPQVCbyXYzz0V6MNPCApK0sq3g
+            MzFB3/6O7+JtucS0r900vmvMov/+ojx39oUPRQlkELBTd8VugTqcGQ==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-06-07T00:40:39Z"
+    mac: ENC[AES256_GCM,data:xSKHuiwsxbrduCl7BB5hkca31WBoWmA+AaLpPhps/WYKbYSb2BOHyblyld6QCTJ/Hkfzn8K5spiOxP7MLSDh9iWXtaXv1zcEAItxfUQnYhoT4Rzj37I47lUtH4WdqeBSzcfLVI2a9N3sym0xp0aCAlVaitZwUucLVgZzQDpzZxo=,iv:TDhFKkePp/bQ5NnOVWpwOwK8dqTfWiZnM1a+skr2V4Q=,tag:DIfqEJwx3fxrDZ6HdqHeAQ==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.10.2
