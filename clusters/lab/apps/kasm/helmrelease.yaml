@@ -62,7 +62,8 @@ spec:
           key: password
 
     dbManagement:
-      initialize: true
+      # Set true only for first bootstrap of an empty Kasm database.
+      initialize: false
       upgrade:
         enable: false
       backupCron:
