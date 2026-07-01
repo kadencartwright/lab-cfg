@@ -1,18 +1,28 @@
 # Homelab Architecture Notes
 
-## Initial Topology
+## Current Topology
 
-The starting assumption is Ubuntu Server 26.04 hosts with three K3s server nodes using embedded etcd.
+The cluster currently runs as a single-node K3s cluster on Ubuntu Server 26.04.
 
 | Host | Role | Notes |
 | --- | --- | --- |
-| `lab-um890` | K3s server and worker | `192.168.32.41`, MAC `3c:c5:dd:02:d5:a2`; strongest node. |
 | `lab-bosgame` | K3s server and worker | `192.168.32.69`, MAC `4c:50:dd:3d:8f:14`; general workload capacity. |
-| `lab-beelink-mini-s` | K3s server and light worker | `192.168.32.169`, MAC `f4:3b:d8:71:47:92`; keep heavier workloads elsewhere. |
 
-This is intentionally simple: no separate agents until there is a reason to add them.
+This keeps `lab-um890` free for non-cluster work and avoids placing the whole
+cluster on the smaller Beelink Mini S.
 
-`lab-um890` has a host-specific kernel command-line override managed by Ansible:
+## Retired Cluster Hosts
+
+These machines were part of the original three-node embedded-etcd cluster but
+are no longer in the active Ansible inventory:
+
+| Host | Previous role | Notes |
+| --- | --- | --- |
+| `lab-um890` | K3s server and worker | `192.168.32.41`, MAC `3c:c5:dd:02:d5:a2`; strongest node. |
+| `lab-beelink-mini-s` | K3s server and light worker | `192.168.32.169`, MAC `f4:3b:d8:71:47:92`; smallest node. |
+
+`lab-um890` previously had a host-specific kernel command-line override while
+it was managed by this Ansible inventory:
 
 ```text
 nvme_core.default_ps_max_latency_us=0
@@ -23,7 +33,8 @@ that looked like intermittent NVMe/controller hangs rather than media wear.
 
 ## Control Plane Endpoint
 
-The inventory currently uses the first server as `api_endpoint`. That is the least magical bootstrap path.
+The inventory currently uses the first server as `api_endpoint`. With the
+single-node inventory, that resolves to `lab-bosgame` at `192.168.32.69`.
 
 For a highly available API endpoint, choose one of these before depending on the cluster for real workloads:
 

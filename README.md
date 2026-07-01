@@ -1,6 +1,6 @@
 # lab-cfg
 
-Homelab infrastructure as code for a three-node Kubernetes cluster.
+Homelab infrastructure as code for a single-node Kubernetes cluster.
 
 This repository manages my homelab from bare Ubuntu hosts through a working
 K3s cluster, then uses GitOps to manage cluster add-ons and applications. It is
@@ -20,7 +20,7 @@ Ubuntu 26.04 hosts
         |
         | k3s-ansible
         v
-3-node K3s cluster
+single-node K3s cluster
         |
         | Flux reconciles from Git
         v
@@ -30,11 +30,10 @@ cluster add-ons + apps
 The cluster currently runs:
 
 - K3s `v1.35.5+k3s1`
-- Three K3s server/control-plane nodes with embedded etcd
+- One K3s server/control-plane node
 - Flux CD
 - SOPS/age decryption for GitOps-managed secrets
 - Tailscale Kubernetes Operator
-- A Tailscale-exposed `whoami` test service
 - A Tailscale-exposed `baby-monitor` application deployed from GHCR
 
 Application services are intentionally exposed through Tailscale
@@ -151,8 +150,8 @@ not a goal right now.
 
 - **K3s over kubeadm/Kubespray**: less operational weight for a small homelab
   while still providing real Kubernetes primitives.
-- **Three server nodes**: all nodes participate in control plane and etcd
-  quorum, because the hardware is SSD-backed and wired.
+- **Single server node**: the cluster currently runs on `lab-bosgame` to keep
+  the UM-890 Pro available for other workloads.
 - **Pinned versions**: K3s is pinned exactly rather than tracking `latest`.
 - **GitOps after bootstrap**: Ansible handles host state; Flux handles
   Kubernetes state.
@@ -168,12 +167,9 @@ not a goal right now.
 - [Baby monitor deployment notes](docs/baby-monitor.md)
 - [Borg backup notes](docs/borg-backups.md)
 - [K3s restore drill](docs/k3s-restore-drill.md)
-- [Monitoring notes](docs/monitoring.md)
-- [Object storage notes](docs/object-storage.md)
 - [Host discovery notes](docs/discovery.md)
 
 ## Current Roadmap
 - Run a destructive K3s restore rehearsal during a maintenance window.
 - Decide on persistent storage policy before adding Longhorn.
 - Move image releases from mutable tags toward immutable tags or digests.
-- Add alert notification routing after the metrics stack settles.

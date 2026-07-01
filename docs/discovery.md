@@ -24,4 +24,4 @@ nmap -Pn -p 22,80,443,6443 --open --system-dns --dns-servers 192.168.32.1 10.10.
 tailscale status
 ```
 
-Earlier stale UniFi data pointed at different MACs and a routed `10.10.24.0/24` network. The current dashboard screenshot identifies the active three-node lab on `192.168.32.0/24`, and those three nodes are reachable from workstation `z16`.
+Earlier stale UniFi data pointed at different MACs and a routed `10.10.24.0/24` network. The dashboard screenshot used during the original discovery identified the three lab hosts on `192.168.32.0/24`, and those hosts were reachable from workstation `z16`.
