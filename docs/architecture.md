@@ -21,8 +21,9 @@ are no longer in the active Ansible inventory:
 | `lab-um890` | K3s server and worker | `192.168.32.41`, MAC `3c:c5:dd:02:d5:a2`; strongest node. |
 | `lab-beelink-mini-s` | K3s server and light worker | `192.168.32.169`, MAC `f4:3b:d8:71:47:92`; smallest node. |
 
-`lab-um890` previously had a host-specific kernel command-line override while
-it was managed by this Ansible inventory:
+`lab-um890` remains in the host-prep inventory, outside of the K3s cluster,
+because it needs this host-specific kernel command-line override for stable
+disk behavior:
 
 ```text
 nvme_core.default_ps_max_latency_us=0
