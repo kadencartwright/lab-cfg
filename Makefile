@@ -7,7 +7,7 @@ BORG_ANSIBLE_USER ?= lab
 HOST_METRICS_ANSIBLE_USER ?= lab
 TAILSCALE_ANSIBLE_USER ?= lab
 
-.PHONY: collections ping sudo-check check prep site upgrade borg-backup systemd-exporter openai-codex-cli tailscale-host-authkey tailscale-hosts tailnet-kubeconfig secrets-scan tailscale-secret ghcr-pull-secret baby-monitor-secret
+.PHONY: collections ping sudo-check check prep site upgrade borg-backup systemd-exporter remote-agent-dev openai-codex-cli tailscale-host-authkey tailscale-hosts tailnet-kubeconfig secrets-scan tailscale-secret ghcr-pull-secret baby-monitor-secret
 
 collections:
 	$(ANSIBLE_GALAXY) collection install -r requirements.yml -p .ansible/collections
@@ -36,8 +36,11 @@ borg-backup:
 systemd-exporter:
 	ANSIBLE_VARS_ENABLED= $(ANSIBLE_PLAYBOOK) -i $(INVENTORY) -u $(HOST_METRICS_ANSIBLE_USER) playbooks/systemd-exporter.yml
 
+remote-agent-dev:
+	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/remote-agent-dev.yml
+
 openai-codex-cli:
-	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/openai-codex-cli.yml
+	$(MAKE) remote-agent-dev
 
 tailscale-host-authkey:
 	scripts/create-tailscale-host-authkey

@@ -1,6 +1,7 @@
 # Host Tailscale
 
-Ansible manages host-level Tailscale on selected lab hosts. This is separate from
+Ansible manages host-level Tailscale on K3s hosts and remote-agent development
+hosts. This is separate from
 the Kubernetes Tailscale operator, which manages pod-level proxies and private
 Ingress objects.
 

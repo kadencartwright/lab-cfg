@@ -1,0 +1,24 @@
+---
+- name: Install OpenAI Codex CLI
+  ansible.builtin.include_role:
+    name: openai_codex_cli
+
+- name: Install Tailscale
+  ansible.builtin.include_role:
+    name: tailscale_host
+
+- name: Install GitHub CLI
+  ansible.builtin.apt:
+    name: "{{ remote_agent_dev_github_cli_package }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Verify GitHub CLI is available
+  ansible.builtin.command: gh --version
+  changed_when: false
+  register: remote_agent_dev_gh_version
+
+- name: Show installed GitHub CLI version
+  ansible.builtin.debug:
+    msg: "{{ remote_agent_dev_gh_version.stdout_lines[0] }}"

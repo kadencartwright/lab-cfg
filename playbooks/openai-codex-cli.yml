@@ -1,7 +1,0 @@
----
-- name: Install OpenAI Codex CLI
-  hosts: openai_codex_cli_hosts
-  gather_facts: true
-  become: true
-  roles:
-    - role: openai_codex_cli

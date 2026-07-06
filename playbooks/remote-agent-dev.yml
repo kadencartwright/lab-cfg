@@ -1,0 +1,7 @@
+---
+- name: Configure remote agent development hosts
+  hosts: remote_agent_dev_hosts
+  gather_facts: true
+  become: true
+  roles:
+    - role: remote-agent-dev

@@ -100,7 +100,7 @@ make upgrade
 Host utility installs:
 
 ```bash
-make openai-codex-cli
+make remote-agent-dev
 ```
 
 ## Secret Management
