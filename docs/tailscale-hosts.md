@@ -1,14 +1,14 @@
 # Host Tailscale
 
-Ansible manages host-level Tailscale on the K3s nodes. This is separate from
+Ansible manages host-level Tailscale on selected lab hosts. This is separate from
 the Kubernetes Tailscale operator, which manages pod-level proxies and private
 Ingress objects.
 
 ## Purpose
 
-Host-level Tailscale lets remote clients reach the K3s API server over the
-tailnet. The current kube-apiserver serving certificate already includes the
-short node hostnames:
+Host-level Tailscale lets remote clients reach selected hosts over the tailnet,
+including the K3s API server on the active cluster node. The current
+kube-apiserver serving certificate already includes the short node hostnames:
 
 ```text
 lab-um890
@@ -19,7 +19,7 @@ lab-beelink-mini-s
 Use a short MagicDNS hostname in kubeconfig, for example:
 
 ```text
-https://lab-um890:6443
+https://lab-bosgame:6443
 ```
 
 Using the short hostname matters because the serving certificate does not
@@ -40,7 +40,7 @@ make tailscale-host-authkey
 ```
 
 The generated key is preauthorized, reusable, non-ephemeral, and tagged
-`tag:k8s`. It is only needed when authenticating a node that is not already on
+`tag:k8s`. It is only needed when authenticating a host that is not already on
 the tailnet; existing nodes keep their Tailscale state locally.
 
 ## Apply

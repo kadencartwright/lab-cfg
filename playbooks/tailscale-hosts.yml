@@ -1,6 +1,6 @@
 ---
 - name: Configure host-level Tailscale
-  hosts: k3s_cluster
+  hosts: k3s_cluster:tailscale_host_hosts
   gather_facts: true
   become: true
   roles:
