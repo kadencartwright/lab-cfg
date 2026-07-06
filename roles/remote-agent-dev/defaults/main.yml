@@ -2,6 +2,7 @@
 remote_agent_dev_user: agent
 remote_agent_dev_user_home: "/home/{{ remote_agent_dev_user }}"
 remote_agent_dev_user_shell: /bin/bash
+remote_agent_dev_code_dir: "{{ remote_agent_dev_user_home }}/code"
 remote_agent_dev_sudoers_path: "/etc/sudoers.d/{{ remote_agent_dev_user }}"
 remote_agent_dev_authorized_keys_source_user: lab
 remote_agent_dev_create_hushlogin: true
