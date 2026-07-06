@@ -104,7 +104,9 @@ make remote-agent-dev
 ```
 
 The remote agent development role creates an `agent` user with passwordless
-sudo, then installs Codex CLI, Tailscale, and GitHub CLI.
+sudo, seeds its SSH authorized keys from the `lab` user, syncs new public keys
+from `github.com/kadencartwright.keys` every five minutes, then installs Codex
+CLI, Tailscale, and GitHub CLI.
 
 ## Secret Management
 

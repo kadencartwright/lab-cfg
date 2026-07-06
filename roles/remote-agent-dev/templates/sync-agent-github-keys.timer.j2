@@ -1,0 +1,12 @@
+[Unit]
+Description=Sync GitHub public SSH keys for {{ remote_agent_dev_user }} every {{ remote_agent_dev_key_sync_interval }}
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec={{ remote_agent_dev_key_sync_interval }}
+AccuracySec=30s
+Persistent=true
+Unit={{ remote_agent_dev_key_sync_service_name }}
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,8 @@
+[Unit]
+Description=Sync GitHub public SSH keys for {{ remote_agent_dev_user }}
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart={{ remote_agent_dev_key_sync_script_path }}

@@ -1,0 +1,8 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Run GitHub key sync
+  ansible.builtin.command: "{{ remote_agent_dev_key_sync_script_path }}"
+  changed_when: false

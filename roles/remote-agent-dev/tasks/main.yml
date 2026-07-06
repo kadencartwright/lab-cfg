@@ -10,6 +10,44 @@
     append: true
     state: present
 
+- name: Look up authorized keys source user
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ remote_agent_dev_authorized_keys_source_user }}"
+
+- name: Read source authorized keys
+  ansible.builtin.slurp:
+    src: "{{ ansible_facts.getent_passwd[remote_agent_dev_authorized_keys_source_user][4] }}/.ssh/authorized_keys"
+  register: remote_agent_dev_source_authorized_keys
+
+- name: Create remote agent SSH directory
+  ansible.builtin.file:
+    path: "{{ remote_agent_dev_user_home }}/.ssh"
+    state: directory
+    owner: "{{ remote_agent_dev_user }}"
+    group: "{{ remote_agent_dev_user }}"
+    mode: "0700"
+
+- name: Install remote agent authorized keys
+  ansible.builtin.copy:
+    dest: "{{ remote_agent_dev_user_home }}/.ssh/authorized_keys"
+    owner: "{{ remote_agent_dev_user }}"
+    group: "{{ remote_agent_dev_user }}"
+    mode: "0600"
+    content: "{{ remote_agent_dev_source_authorized_keys.content | b64decode }}"
+    force: false
+
+- name: Create remote agent hushlogin
+  ansible.builtin.file:
+    path: "{{ remote_agent_dev_user_home }}/.hushlogin"
+    state: touch
+    owner: "{{ remote_agent_dev_user }}"
+    group: "{{ remote_agent_dev_user }}"
+    mode: "0644"
+    modification_time: preserve
+    access_time: preserve
+  when: remote_agent_dev_create_hushlogin
+
 - name: Allow remote agent user passwordless sudo
   ansible.builtin.copy:
     dest: "{{ remote_agent_dev_sudoers_path }}"
@@ -19,6 +57,51 @@
     content: |
       {{ remote_agent_dev_user }} ALL=(ALL) NOPASSWD:ALL
     validate: /usr/sbin/visudo -cf %s
+
+- name: Install GitHub key sync dependencies
+  ansible.builtin.apt:
+    name: "{{ remote_agent_dev_key_sync_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install GitHub key sync script
+  ansible.builtin.template:
+    src: sync-agent-github-keys.j2
+    dest: "{{ remote_agent_dev_key_sync_script_path }}"
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Run GitHub key sync
+
+- name: Install GitHub key sync service
+  ansible.builtin.template:
+    src: sync-agent-github-keys.service.j2
+    dest: "/etc/systemd/system/{{ remote_agent_dev_key_sync_service_name }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Install GitHub key sync timer
+  ansible.builtin.template:
+    src: sync-agent-github-keys.timer.j2
+    dest: "/etc/systemd/system/{{ remote_agent_dev_key_sync_timer_name }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Enable GitHub key sync timer
+  ansible.builtin.systemd:
+    name: "{{ remote_agent_dev_key_sync_timer_name }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Run GitHub key sync now
+  ansible.builtin.command: "{{ remote_agent_dev_key_sync_script_path }}"
+  changed_when: false
 
 - name: Install OpenAI Codex CLI
   ansible.builtin.include_role:

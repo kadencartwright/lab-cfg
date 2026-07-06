@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+github_user={{ remote_agent_dev_github_user | quote }}
+agent_user={{ remote_agent_dev_user | quote }}
+agent_group={{ remote_agent_dev_user | quote }}
+agent_home={{ remote_agent_dev_user_home | quote }}
+ssh_dir="${agent_home}/.ssh"
+authorized_keys="${ssh_dir}/authorized_keys"
+tmp_keys="$(mktemp)"
+lock_file="/run/sync-agent-github-keys.lock"
+
+cleanup() {
+  rm -f "${tmp_keys}"
+}
+trap cleanup EXIT
+
+install -d -o "${agent_user}" -g "${agent_group}" -m 0700 "${ssh_dir}"
+touch "${authorized_keys}"
+chown "${agent_user}:${agent_group}" "${authorized_keys}"
+chmod 0600 "${authorized_keys}"
+
+curl --fail --silent --show-error --location "https://github.com/${github_user}.keys" \
+  | sed '/^[[:space:]]*$/d' > "${tmp_keys}"
+
+if [[ ! -s "${tmp_keys}" ]]; then
+  echo "No GitHub public keys found for ${github_user}" >&2
+  exit 1
+fi
+
+{
+  flock -x 9
+  while IFS= read -r key; do
+    key_identity="$(awk '{ print $1 " " $2 }' <<< "${key}")"
+    if ! awk -v key_identity="${key_identity}" '{ if (($1 " " $2) == key_identity) found = 1 } END { exit found ? 0 : 1 }' "${authorized_keys}"; then
+      printf '%s\n' "${key}" >> "${authorized_keys}"
+    fi
+  done < "${tmp_keys}"
+  chown "${agent_user}:${agent_group}" "${authorized_keys}"
+  chmod 0600 "${authorized_keys}"
+} 9>"${lock_file}"
