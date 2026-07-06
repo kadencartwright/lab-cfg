@@ -36,6 +36,25 @@
     group: "{{ remote_agent_dev_user }}"
     mode: "0755"
 
+- name: Create remote agent Codex config directory
+  ansible.builtin.file:
+    path: "{{ remote_agent_dev_codex_dir }}"
+    state: directory
+    owner: "{{ remote_agent_dev_user }}"
+    group: "{{ remote_agent_dev_user }}"
+    mode: "0755"
+
+- name: Install remote agent Codex config
+  ansible.builtin.copy:
+    dest: "{{ remote_agent_dev_codex_config_path }}"
+    owner: "{{ remote_agent_dev_user }}"
+    group: "{{ remote_agent_dev_user }}"
+    mode: "0644"
+    content: |
+      approvals_reviewer = "{{ remote_agent_dev_codex_config.approvals_reviewer }}"
+      approval_policy = "{{ remote_agent_dev_codex_config.approval_policy }}"
+      sandbox_mode = "{{ remote_agent_dev_codex_config.sandbox_mode }}"
+
 - name: Install remote agent authorized keys
   ansible.builtin.copy:
     dest: "{{ remote_agent_dev_user_home }}/.ssh/authorized_keys"
