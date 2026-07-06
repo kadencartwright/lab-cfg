@@ -1,2 +1,6 @@
 ---
+remote_agent_dev_user: agent
+remote_agent_dev_user_home: "/home/{{ remote_agent_dev_user }}"
+remote_agent_dev_user_shell: /bin/bash
+remote_agent_dev_sudoers_path: "/etc/sudoers.d/{{ remote_agent_dev_user }}"
 remote_agent_dev_github_cli_package: gh

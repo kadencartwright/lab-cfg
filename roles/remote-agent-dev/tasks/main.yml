@@ -1,4 +1,25 @@
 ---
+- name: Create remote agent user
+  ansible.builtin.user:
+    name: "{{ remote_agent_dev_user }}"
+    home: "{{ remote_agent_dev_user_home }}"
+    shell: "{{ remote_agent_dev_user_shell }}"
+    create_home: true
+    groups:
+      - sudo
+    append: true
+    state: present
+
+- name: Allow remote agent user passwordless sudo
+  ansible.builtin.copy:
+    dest: "{{ remote_agent_dev_sudoers_path }}"
+    owner: root
+    group: root
+    mode: "0440"
+    content: |
+      {{ remote_agent_dev_user }} ALL=(ALL) NOPASSWD:ALL
+    validate: /usr/sbin/visudo -cf %s
+
 - name: Install OpenAI Codex CLI
   ansible.builtin.include_role:
     name: openai_codex_cli

@@ -103,6 +103,9 @@ Host utility installs:
 make remote-agent-dev
 ```
 
+The remote agent development role creates an `agent` user with passwordless
+sudo, then installs Codex CLI, Tailscale, and GitHub CLI.
+
 ## Secret Management
 
 This repository is designed to be public.
