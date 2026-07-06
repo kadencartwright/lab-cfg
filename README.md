@@ -97,6 +97,12 @@ K3s upgrades are deliberate and version-pinned:
 make upgrade
 ```
 
+Host utility installs:
+
+```bash
+make openai-codex-cli
+```
+
 ## Secret Management
 
 This repository is designed to be public.

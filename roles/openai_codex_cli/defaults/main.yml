@@ -1,0 +1,7 @@
+---
+openai_codex_cli_apt_packages:
+  - nodejs
+  - npm
+openai_codex_cli_npm_package: "@openai/codex"
+openai_codex_cli_npm_state: present
+openai_codex_cli_npm_version: ""

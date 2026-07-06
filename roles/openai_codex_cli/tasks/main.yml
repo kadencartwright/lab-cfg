@@ -1,0 +1,23 @@
+---
+- name: Install Codex CLI runtime packages
+  ansible.builtin.apt:
+    name: "{{ openai_codex_cli_apt_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install Codex CLI from npm
+  community.general.npm:
+    name: "{{ openai_codex_cli_npm_package }}"
+    global: true
+    state: "{{ openai_codex_cli_npm_state }}"
+    version: "{{ openai_codex_cli_npm_version | default(omit, true) }}"
+
+- name: Verify Codex CLI is available
+  ansible.builtin.command: codex --version
+  changed_when: false
+  register: openai_codex_cli_version
+
+- name: Show installed Codex CLI version
+  ansible.builtin.debug:
+    msg: "{{ openai_codex_cli_version.stdout }}"
