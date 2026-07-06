@@ -24,6 +24,10 @@ host_prep_kernel_modules:
 
 host_prep_kernel_cmdline_args: []
 
+host_prep_login_user: "{{ ansible_user | default('lab') }}"
+host_prep_create_hushlogin: false
+host_prep_remove_bashrc_lines: []
+
 host_prep_sysctl:
   net.bridge.bridge-nf-call-iptables: "1"
   net.bridge.bridge-nf-call-ip6tables: "1"

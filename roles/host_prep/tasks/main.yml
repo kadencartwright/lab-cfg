@@ -114,6 +114,32 @@
     replace: '# \1'
   when: host_prep_disable_swap
 
+- name: Look up login user
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ host_prep_login_user }}"
+  when:
+    - host_prep_create_hushlogin or (host_prep_remove_bashrc_lines | length > 0)
+
+- name: Create hushlogin for quiet SSH logins
+  ansible.builtin.file:
+    path: "{{ ansible_facts.getent_passwd[host_prep_login_user][4] }}/.hushlogin"
+    state: touch
+    owner: "{{ host_prep_login_user }}"
+    group: "{{ ansible_facts.getent_passwd[host_prep_login_user][2] }}"
+    mode: "0644"
+    modification_time: preserve
+    access_time: preserve
+  when: host_prep_create_hushlogin
+
+- name: Remove stale shell startup lines
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_facts.getent_passwd[host_prep_login_user][4] }}/.bashrc"
+    regexp: "{{ item }}"
+    state: absent
+  loop: "{{ host_prep_remove_bashrc_lines }}"
+  when: host_prep_remove_bashrc_lines | length > 0
+
 - name: Disable sleep targets
   ansible.builtin.systemd:
     name: "{{ item }}"
