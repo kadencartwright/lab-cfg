@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -lt 2 || $# -gt 4 ]]; then
-  echo "Usage: patristic-tts-render <slug> <voice> [speed] [input-file]" >&2
+if [[ $# -lt 1 || $# -gt 4 ]]; then
+  echo "Usage: patristic-tts-render <slug> [voice] [speed] [input-file]" >&2
   exit 2
 fi
 
 slug="$1"
-voice="$2"
+voice="${2:-{{ tts_pipeline_production_voice }}}"
 speed="${3:-1.0}"
 input="${4:-{{ tts_pipeline_input_dir }}/$slug.txt}"
 master_dir="{{ tts_pipeline_master_dir }}/$slug"

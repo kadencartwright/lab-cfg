@@ -115,6 +115,7 @@ text file or inline text, caches deterministic WAV chunks for resumable work,
 and assembles a final narration without holding the complete work in memory.
 The `patristic-tts-render` production wrapper retains master WAV files under
 `masters/` and creates 48 kbps mono Opus delivery files under `delivery/`.
+It uses the `bm_george` voice by default for the library's production queue.
 
 ## Secret Management
 

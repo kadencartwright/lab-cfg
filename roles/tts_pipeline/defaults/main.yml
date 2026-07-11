@@ -12,6 +12,7 @@ tts_pipeline_kokoro_onnx_version: "0.4.7"
 tts_pipeline_model_url: https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
 tts_pipeline_voices_url: https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
 tts_pipeline_generate_samples: false
+tts_pipeline_production_voice: bm_george
 tts_pipeline_sample_voices:
   - af_heart
   - af_sarah
