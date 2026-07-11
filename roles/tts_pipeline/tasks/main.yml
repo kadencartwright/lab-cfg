@@ -22,6 +22,9 @@
     - "{{ tts_pipeline_root }}"
     - "{{ tts_pipeline_model_dir }}"
     - "{{ tts_pipeline_output_dir }}"
+    - "{{ tts_pipeline_input_dir }}"
+    - "{{ tts_pipeline_master_dir }}"
+    - "{{ tts_pipeline_delivery_dir }}"
 
 - name: Create text-to-speech virtual environment
   ansible.builtin.command:
@@ -55,6 +58,14 @@
   ansible.builtin.template:
     src: patristic-tts.py.j2
     dest: "{{ tts_pipeline_root }}/patristic-tts"
+    owner: "{{ tts_pipeline_user }}"
+    group: "{{ tts_pipeline_group }}"
+    mode: "0755"
+
+- name: Install text-to-speech production renderer
+  ansible.builtin.template:
+    src: patristic-tts-render.sh.j2
+    dest: "{{ tts_pipeline_root }}/patristic-tts-render"
     owner: "{{ tts_pipeline_user }}"
     group: "{{ tts_pipeline_group }}"
     mode: "0755"

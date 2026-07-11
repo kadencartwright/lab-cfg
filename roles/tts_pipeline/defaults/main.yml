@@ -5,6 +5,9 @@ tts_pipeline_root: /opt/patristic-tts
 tts_pipeline_venv: "{{ tts_pipeline_root }}/venv"
 tts_pipeline_model_dir: "{{ tts_pipeline_root }}/models"
 tts_pipeline_output_dir: "{{ tts_pipeline_root }}/output"
+tts_pipeline_input_dir: "{{ tts_pipeline_root }}/inputs"
+tts_pipeline_master_dir: "{{ tts_pipeline_root }}/masters"
+tts_pipeline_delivery_dir: "{{ tts_pipeline_root }}/delivery"
 tts_pipeline_kokoro_onnx_version: "0.4.7"
 tts_pipeline_model_url: https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
 tts_pipeline_voices_url: https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin

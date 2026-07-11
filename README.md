@@ -113,6 +113,8 @@ The text-to-speech role configures `lab-um890` with a pinned Kokoro-ONNX CPU
 environment under `/opt/patristic-tts`. Its `patristic-tts` command accepts a
 text file or inline text, caches deterministic WAV chunks for resumable work,
 and assembles a final narration without holding the complete work in memory.
+The `patristic-tts-render` production wrapper retains master WAV files under
+`masters/` and creates 48 kbps mono Opus delivery files under `delivery/`.
 
 ## Secret Management
 

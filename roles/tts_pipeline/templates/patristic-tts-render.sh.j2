@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 2 || $# -gt 4 ]]; then
+  echo "Usage: patristic-tts-render <slug> <voice> [speed] [input-file]" >&2
+  exit 2
+fi
+
+slug="$1"
+voice="$2"
+speed="${3:-1.0}"
+input="${4:-{{ tts_pipeline_input_dir }}/$slug.txt}"
+master_dir="{{ tts_pipeline_master_dir }}/$slug"
+master="$master_dir/$slug-$voice.wav"
+delivery="{{ tts_pipeline_delivery_dir }}/$slug-$voice.opus"
+
+mkdir -p "$master_dir"
+"{{ tts_pipeline_root }}/patristic-tts" \
+  --input "$input" \
+  --voice "$voice" \
+  --speed "$speed" \
+  --output "$master"
+
+ffmpeg -hide_banner -loglevel error -y \
+  -i "$master" \
+  -map_metadata -1 \
+  -ac 1 \
+  -af loudnorm=I=-18:TP=-1.5:LRA=7 \
+  -c:a libopus \
+  -b:a 48k \
+  -vbr on \
+  -compression_level 10 \
+  -application audio \
+  "$delivery"
+
+sha256sum "$input" "$master" "$delivery" > "$master_dir/checksums.sha256"
+
+echo "Master: $master"
+echo "Delivery: $delivery"
