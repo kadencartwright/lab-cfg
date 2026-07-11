@@ -1,0 +1,22 @@
+---
+tts_pipeline_user: agent
+tts_pipeline_group: agent
+tts_pipeline_root: /opt/patristic-tts
+tts_pipeline_venv: "{{ tts_pipeline_root }}/venv"
+tts_pipeline_model_dir: "{{ tts_pipeline_root }}/models"
+tts_pipeline_output_dir: "{{ tts_pipeline_root }}/output"
+tts_pipeline_kokoro_onnx_version: "0.4.7"
+tts_pipeline_model_url: https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
+tts_pipeline_voices_url: https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
+tts_pipeline_generate_samples: false
+tts_pipeline_sample_voices:
+  - af_heart
+  - af_sarah
+  - am_michael
+  - bm_george
+tts_pipeline_sample_text: >-
+  There are two ways, one of life and one of death; but a great difference
+  between the two ways. The way of life, then, is this: first, you shall love
+  God who made you; second, your neighbor as yourself. Athanasius of
+  Alexandria wrote concerning the incarnation of the Word, and Irenaeus of
+  Lyons defended the apostolic rule of faith.

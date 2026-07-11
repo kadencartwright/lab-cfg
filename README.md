@@ -101,12 +101,18 @@ Host utility installs:
 
 ```bash
 make remote-agent-dev
+make tts-pipeline
 ```
 
 The remote agent development role creates an `agent` user with passwordless
 sudo, seeds its SSH authorized keys from the `lab` user, syncs new public keys
 from `github.com/kadencartwright.keys` every five minutes, then installs Codex
 CLI, Tailscale, and GitHub CLI.
+
+The text-to-speech role configures `lab-um890` with a pinned Kokoro-ONNX CPU
+environment under `/opt/patristic-tts`. Its `patristic-tts` command accepts a
+text file or inline text, caches deterministic WAV chunks for resumable work,
+and assembles a final narration without holding the complete work in memory.
 
 ## Secret Management
 

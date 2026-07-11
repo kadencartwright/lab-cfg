@@ -1,0 +1,81 @@
+#!{{ tts_pipeline_venv }}/bin/python
+import argparse
+import hashlib
+import re
+import time
+from pathlib import Path
+
+import numpy as np
+import soundfile as sf
+from kokoro_onnx import Kokoro
+
+MODEL = "{{ tts_pipeline_model_dir }}/kokoro-v1.0.onnx"
+VOICES = "{{ tts_pipeline_model_dir }}/voices-v1.0.bin"
+
+def chunks(text: str, limit: int = 750):
+    paragraphs = [re.sub(r"\s+", " ", p).strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
+    for paragraph in paragraphs:
+        sentences = re.split(r"(?<=[.!?])\s+", paragraph)
+        current = ""
+        for sentence in sentences:
+            if current and len(current) + len(sentence) + 1 > limit:
+                yield current
+                current = sentence
+            else:
+                current = f"{current} {sentence}".strip()
+        if current:
+            yield current
+
+def main():
+    parser = argparse.ArgumentParser(description="Generate resumable Kokoro narration")
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--input", type=Path)
+    source.add_argument("--text")
+    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--voice", default="af_heart")
+    parser.add_argument("--speed", type=float, default=0.96)
+    parser.add_argument("--lang", default="en-us")
+    args = parser.parse_args()
+
+    text = args.text if args.text is not None else args.input.read_text(encoding="utf-8")
+    output = args.output.expanduser().resolve()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    if output.exists() and output.stat().st_size > 44:
+        print(f"Already complete: {output}")
+        return
+
+    started = time.monotonic()
+    model = Kokoro(MODEL, VOICES)
+    chunk_dir = output.with_suffix(output.suffix + ".chunks")
+    chunk_dir.mkdir(parents=True, exist_ok=True)
+    chunk_files = []
+    sample_rate = 24000
+    for index, chunk in enumerate(chunks(text), start=1):
+        digest = hashlib.sha256(f"{args.voice}|{args.speed}|{args.lang}|{chunk}".encode()).hexdigest()[:12]
+        chunk_file = chunk_dir / f"{index:05d}-{digest}.wav"
+        chunk_files.append(chunk_file)
+        if chunk_file.exists():
+            print(f"Reusing chunk {index}: {chunk_file.name}")
+            continue
+        samples, sample_rate = model.create(chunk, voice=args.voice, speed=args.speed, lang=args.lang)
+        sf.write(chunk_file, samples, sample_rate, subtype="PCM_16")
+        print(f"Generated chunk {index}: {len(chunk)} characters")
+    if not chunk_files:
+        raise SystemExit("Input did not contain narratable text")
+    silence = np.zeros(int(sample_rate * 0.45), dtype=np.float32)
+    duration = 0.0
+    with sf.SoundFile(output, mode="w", samplerate=sample_rate, channels=1, subtype="PCM_16") as destination:
+        for index, chunk_file in enumerate(chunk_files):
+            samples, chunk_rate = sf.read(chunk_file, dtype="float32")
+            if chunk_rate != sample_rate:
+                raise RuntimeError(f"Unexpected sample rate in {chunk_file}: {chunk_rate}")
+            destination.write(samples)
+            duration += len(samples) / sample_rate
+            if index < len(chunk_files) - 1:
+                destination.write(silence)
+                duration += len(silence) / sample_rate
+    elapsed = time.monotonic() - started
+    print(f"Wrote {output} ({duration:.1f}s audio in {elapsed:.1f}s, RTF {elapsed / duration:.3f})")
+
+if __name__ == "__main__":
+    main()

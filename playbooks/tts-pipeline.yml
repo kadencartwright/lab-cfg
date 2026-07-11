@@ -1,0 +1,12 @@
+---
+- name: Configure local text-to-speech workers
+  hosts: tts_pipeline_hosts
+  gather_facts: true
+  become: true
+  remote_user: agent
+  vars:
+    ansible_user: agent
+    ansible_ssh_private_key_file: /home/k/.ssh/id_ed25519_github_to_bitbucket_key
+    tts_pipeline_generate_samples: true
+  roles:
+    - role: tts_pipeline

@@ -1,0 +1,75 @@
+---
+- name: Install text-to-speech system dependencies
+  ansible.builtin.apt:
+    name:
+      - espeak-ng
+      - ffmpeg
+      - libsndfile1
+      - python3-pip
+      - python3-venv
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create text-to-speech directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ tts_pipeline_user }}"
+    group: "{{ tts_pipeline_group }}"
+    mode: "0755"
+  loop:
+    - "{{ tts_pipeline_root }}"
+    - "{{ tts_pipeline_model_dir }}"
+    - "{{ tts_pipeline_output_dir }}"
+
+- name: Create text-to-speech virtual environment
+  ansible.builtin.command:
+    cmd: "python3 -m venv {{ tts_pipeline_venv }}"
+    creates: "{{ tts_pipeline_venv }}/bin/python"
+
+- name: Install pinned text-to-speech Python packages
+  ansible.builtin.pip:
+    name:
+      - "kokoro-onnx=={{ tts_pipeline_kokoro_onnx_version }}"
+      - soundfile
+    virtualenv: "{{ tts_pipeline_venv }}"
+
+- name: Download Kokoro ONNX model
+  ansible.builtin.get_url:
+    url: "{{ tts_pipeline_model_url }}"
+    dest: "{{ tts_pipeline_model_dir }}/kokoro-v1.0.onnx"
+    owner: "{{ tts_pipeline_user }}"
+    group: "{{ tts_pipeline_group }}"
+    mode: "0644"
+
+- name: Download Kokoro voice embeddings
+  ansible.builtin.get_url:
+    url: "{{ tts_pipeline_voices_url }}"
+    dest: "{{ tts_pipeline_model_dir }}/voices-v1.0.bin"
+    owner: "{{ tts_pipeline_user }}"
+    group: "{{ tts_pipeline_group }}"
+    mode: "0644"
+
+- name: Install text-to-speech pipeline
+  ansible.builtin.template:
+    src: patristic-tts.py.j2
+    dest: "{{ tts_pipeline_root }}/patristic-tts"
+    owner: "{{ tts_pipeline_user }}"
+    group: "{{ tts_pipeline_group }}"
+    mode: "0755"
+
+- name: Generate sample narrations
+  ansible.builtin.command:
+    argv:
+      - "{{ tts_pipeline_root }}/patristic-tts"
+      - --text
+      - "{{ tts_pipeline_sample_text }}"
+      - --voice
+      - "{{ item }}"
+      - --output
+      - "{{ tts_pipeline_output_dir }}/sample-{{ item }}.wav"
+    creates: "{{ tts_pipeline_output_dir }}/sample-{{ item }}.wav"
+  become_user: "{{ tts_pipeline_user }}"
+  loop: "{{ tts_pipeline_sample_voices }}"
+  when: tts_pipeline_generate_samples | bool
