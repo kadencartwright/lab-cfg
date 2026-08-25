@@ -13,6 +13,8 @@ spec:
       app.kubernetes.io/name: baby-monitor
   template:
     metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-08-25T02:13:50Z"
       labels:
         app.kubernetes.io/name: baby-monitor
     spec:
