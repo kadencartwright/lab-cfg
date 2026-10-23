@@ -26,7 +26,7 @@
 
 - name: Install Tailscale
   ansible.builtin.apt:
-    name: "{{ tailscale_host_package_name }}"
+    name: "{{ tailscale_host_package_name }}={{ tailscale_host_package_version }}"
     state: present
     update_cache: true
     cache_valid_time: 3600

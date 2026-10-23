@@ -1,0 +1,6 @@
+---
+- name: Install official AWS CLI
+  hosts: aws_cli_hosts
+  become: true
+  roles:
+    - role: aws_cli

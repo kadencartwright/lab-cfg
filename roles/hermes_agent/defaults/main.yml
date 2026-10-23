@@ -1,0 +1,49 @@
+---
+hermes_agent_user: agent
+hermes_agent_user_home: "/home/{{ hermes_agent_user }}"
+hermes_agent_home: "{{ hermes_agent_user_home }}/.hermes"
+hermes_agent_install_dir: "{{ hermes_agent_home }}/hermes-agent"
+hermes_agent_version: "v2026.8.31"
+hermes_agent_commit: "29112bef099274229cadff79cdff7bf7b99c4b77"
+hermes_agent_installer_url: >-
+  https://raw.githubusercontent.com/NousResearch/hermes-agent/{{ hermes_agent_commit }}/scripts/install.sh
+hermes_agent_installer_sha256: "85ef536d455e51ab67aa74d79272efd49fe717597dbaadfd3cca179a905f4706"
+hermes_agent_installer_path: "{{ hermes_agent_user_home }}/.cache/hermes-install-{{ hermes_agent_version }}.sh"
+
+hermes_agent_model_provider: openai-codex
+hermes_agent_model: gpt-5.6-sol
+hermes_agent_ddgs_version: "9.14.4"
+hermes_agent_playwright_chromium_path: >-
+  {{ hermes_agent_user_home }}/.agent-browser/browsers/chrome-151.0.7922.76/chrome
+hermes_agent_apparmor_profile_path: /etc/apparmor.d/hermes-playwright-chromium
+hermes_agent_packages:
+  - build-essential
+  - ca-certificates
+  - curl
+  - ffmpeg
+  - git
+  - jq
+  - libffi-dev
+  - python3-dev
+
+hermes_t3_version: "0.1.2"
+hermes_t3_url: http://127.0.0.1:3773
+hermes_t3_home: "{{ hermes_agent_user_home }}/.t3"
+hermes_t3_bridge_dir: "{{ hermes_agent_user_home }}/.local/share/hermes-t3-bridge"
+hermes_t3_cli: "{{ hermes_t3_bridge_dir }}/node_modules/.bin/t3"
+hermes_t3_projects_path: "{{ hermes_agent_home }}/t3-projects.json"
+hermes_t3_projects:
+  smoke:
+    t3Project: hermes-t3-smoke
+    baseBranch: main
+    modelSelection:
+      instanceId: codex
+      model: gpt-5.4
+
+hermes_t3_smoke_repo: "{{ hermes_agent_user_home }}/code/hermes-t3-smoke"
+hermes_t3_smoke_project_title: hermes-t3-smoke
+
+hermes_slack_mcp_url: https://mcp.slack.com/mcp
+hermes_jira_mcp_url: https://mcp.atlassian.com/v1/mcp
+hermes_slack_mcp_enabled: false
+hermes_jira_mcp_enabled: false

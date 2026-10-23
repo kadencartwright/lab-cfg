@@ -4,11 +4,14 @@
 .tools/
 *.retry
 *.log
+__pycache__/
+*.py[cod]
 
 # Local secrets and generated access material
 *.vault.yml
 inventories/**/vault.yml
 !inventories/lab/group_vars/k3s_cluster/vault.yml
+!inventories/lab/group_vars/remote_agent_dev_hosts/vault.yml
 inventories/**/host_vars/*/vault.yml
 kubeconfig*
 *.agekey

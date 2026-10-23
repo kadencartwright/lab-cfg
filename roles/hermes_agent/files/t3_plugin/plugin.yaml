@@ -1,0 +1,12 @@
+name: t3_code
+version: 0.1.0
+description: Native bridge to ordinary, worktree-backed T3 Code threads using the installed T3 orchestration contract.
+author: local
+kind: standalone
+platforms:
+  - linux
+provides_tools:
+  - t3_list_projects
+  - t3_start_task
+  - t3_get_task
+  - t3_send_message

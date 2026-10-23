@@ -1,0 +1,6 @@
+---
+- name: Install Pi coding agent
+  hosts: remote_agent_dev_hosts
+  become: true
+  roles:
+    - role: pi_cli

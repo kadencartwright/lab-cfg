@@ -1,0 +1,55 @@
+---
+- name: Install Claude Code installer dependencies
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - bash
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create the installer directory
+  ansible.builtin.file:
+    path: "{{ claude_code_installer_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download the official Claude Code installer
+  ansible.builtin.get_url:
+    url: "{{ claude_code_installer_url }}"
+    dest: "{{ claude_code_installer_path }}"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install native Claude Code for the development user
+  become: true
+  become_user: "{{ claude_code_user }}"
+  ansible.builtin.command:
+    argv:
+      - /bin/bash
+      - "{{ claude_code_installer_path }}"
+    creates: "{{ claude_code_binary_path }}"
+  environment:
+    HOME: "{{ claude_code_user_home }}"
+
+- name: Verify Claude Code is available
+  become: true
+  become_user: "{{ claude_code_user }}"
+  ansible.builtin.command:
+    argv:
+      - "{{ claude_code_binary_path }}"
+      - --version
+  environment:
+    HOME: "{{ claude_code_user_home }}"
+  changed_when: false
+  when: not ansible_check_mode
+  register: claude_code_verified_version
+
+- name: Show installed Claude Code version
+  ansible.builtin.debug:
+    msg: "{{ claude_code_verified_version.stdout }}"
+  when: not ansible_check_mode

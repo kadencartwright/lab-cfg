@@ -1,0 +1,6 @@
+---
+claude_code_user: agent
+claude_code_user_home: /home/agent
+claude_code_binary_path: "{{ claude_code_user_home }}/.local/bin/claude"
+claude_code_installer_url: https://claude.ai/install.sh
+claude_code_installer_path: /usr/local/libexec/claude-code-install

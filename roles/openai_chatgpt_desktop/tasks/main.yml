@@ -1,0 +1,84 @@
+---
+- name: Require a supported ChatGPT desktop distribution
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution in openai_chatgpt_desktop_supported_distributions
+      - >-
+        ansible_facts.distribution_version in
+        openai_chatgpt_desktop_supported_distributions[ansible_facts.distribution]
+    fail_msg: >-
+      ChatGPT desktop supports Ubuntu 24.04/26.04 and Debian 13; found
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+
+- name: Require a supported ChatGPT desktop architecture
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.architecture in openai_chatgpt_desktop_deb_architectures
+    fail_msg: >-
+      ChatGPT desktop supports x86_64 and ARM64; found
+      {{ ansible_facts.architecture }}.
+
+- name: Read installed package facts
+  ansible.builtin.package_facts:
+    manager: apt
+
+- name: Create the ChatGPT package cache directory
+  ansible.builtin.file:
+    path: "{{ openai_chatgpt_desktop_cache_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when:
+    - "'chatgpt' not in ansible_facts.packages"
+    - not ansible_check_mode
+
+- name: Download the official ChatGPT desktop bootstrap package
+  ansible.builtin.get_url:
+    url: "{{ openai_chatgpt_desktop_package_url }}"
+    dest: "{{ openai_chatgpt_desktop_package_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+    timeout: 600
+  when:
+    - "'chatgpt' not in ansible_facts.packages"
+    - not ansible_check_mode
+
+- name: Install the ChatGPT desktop bootstrap package
+  ansible.builtin.apt:
+    deb: "{{ openai_chatgpt_desktop_package_path }}"
+    state: present
+  when:
+    - "'chatgpt' not in ansible_facts.packages"
+    - not ansible_check_mode
+
+- name: Install the latest ChatGPT desktop release from the OpenAI repository
+  ansible.builtin.apt:
+    name: chatgpt
+    state: latest
+    update_cache: true
+    cache_valid_time: 0
+  when: "'chatgpt' in ansible_facts.packages or not ansible_check_mode"
+
+- name: Remove the downloaded ChatGPT desktop bootstrap package
+  ansible.builtin.file:
+    path: "{{ openai_chatgpt_desktop_package_path }}"
+    state: absent
+  when: not ansible_check_mode
+
+- name: Read the installed ChatGPT desktop version
+  ansible.builtin.command:
+    argv:
+      - dpkg-query
+      - --show
+      - "--showformat=${Version}"
+      - chatgpt
+  changed_when: false
+  register: openai_chatgpt_desktop_version
+  when: "'chatgpt' in ansible_facts.packages or not ansible_check_mode"
+
+- name: Show the installed ChatGPT desktop version
+  ansible.builtin.debug:
+    msg: "ChatGPT desktop {{ openai_chatgpt_desktop_version.stdout }}"
+  when: not openai_chatgpt_desktop_version.skipped | default(false)

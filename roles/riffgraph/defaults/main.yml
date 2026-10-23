@@ -1,0 +1,167 @@
+---
+riffgraph_user: agent
+riffgraph_group: agent
+riffgraph_user_home: "/home/{{ riffgraph_user }}"
+
+riffgraph_root: /opt/riffgraph
+riffgraph_releases_dir: "{{ riffgraph_root }}/releases"
+riffgraph_current_link: "{{ riffgraph_root }}/current"
+riffgraph_app_dir: "{{ riffgraph_current_link }}/app"
+riffgraph_venv_dir: "{{ riffgraph_root }}/venvs"
+riffgraph_core_venv: "{{ riffgraph_current_link }}/venv"
+riffgraph_legacy_muscriptor_venv: >-
+  {{ riffgraph_venv_dir }}/muscriptor-py{{ riffgraph_python_abi }}
+riffgraph_cache_dir: "{{ riffgraph_root }}/cache"
+riffgraph_uv_cache_dir: "{{ riffgraph_cache_dir }}/uv"
+riffgraph_python_dir: "{{ riffgraph_root }}/python"
+riffgraph_python_uv_cache_dir: /var/cache/riffgraph-uv
+riffgraph_project_dir: "{{ riffgraph_root }}/projects"
+
+riffgraph_local_source: /home/k/code/riffgraph
+riffgraph_python_version: "3.12.13"
+riffgraph_python_abi: "3.12"
+riffgraph_python_runtime_dir: >-
+  {{ riffgraph_python_dir }}/cpython-{{ riffgraph_python_version }}-linux-x86_64-gnu
+riffgraph_python_executable: >-
+  {{ riffgraph_python_runtime_dir }}/bin/python{{ riffgraph_python_abi }}
+
+riffgraph_uv_version: "0.11.29"
+riffgraph_uv_archive: "uv-x86_64-unknown-linux-gnu.tar.gz"
+riffgraph_uv_url: >-
+  https://github.com/astral-sh/uv/releases/download/{{ riffgraph_uv_version }}/{{ riffgraph_uv_archive }}
+riffgraph_uv_sha256: 04f8b82f5d47f0512dcd32c67a4a6f16a0ea27c81537c338fd0ad6b23cebe829
+riffgraph_uv_install_dir: "/opt/uv/{{ riffgraph_uv_version }}"
+riffgraph_uv_binary: >-
+  {{ riffgraph_uv_install_dir }}/uv-x86_64-unknown-linux-gnu/uv
+
+riffgraph_muscriptor_version: "0.2.1"
+riffgraph_muscriptor_model: small
+riffgraph_hf_token_source: /home/k/.cache/huggingface/token
+riffgraph_hf_home: "{{ riffgraph_user_home }}/.cache/huggingface"
+
+riffgraph_soundfont: /usr/share/sounds/sf2/FluidR3_GM.sf2
+riffgraph_disable_fluidsynth_daemon: true
+
+riffgraph_tools_dir: "{{ riffgraph_root }}/tools"
+riffgraph_asset_cache_dir: "{{ riffgraph_root }}/cache/assets"
+riffgraph_instruments_dir: "{{ riffgraph_root }}/instruments"
+riffgraph_active_instruments_dir: "{{ riffgraph_instruments_dir }}/active"
+
+riffgraph_sfizz_version: "1.2.3"
+riffgraph_sfizz_url: >-
+  https://github.com/sfztools/sfizz/releases/download/{{ riffgraph_sfizz_version }}/sfizz-{{ riffgraph_sfizz_version }}.tar.gz
+riffgraph_sfizz_sha256: a9339eac7620d7f0f6b44bdfe860680fab73e66efad4b5f15b21198dd9436822
+riffgraph_sfizz_archive: >-
+  {{ riffgraph_asset_cache_dir }}/sfizz-{{ riffgraph_sfizz_version }}.tar.gz
+riffgraph_sfizz_source_dir: >-
+  {{ riffgraph_tools_dir }}/sfizz-{{ riffgraph_sfizz_version }}/source
+riffgraph_sfizz_build_dir: >-
+  {{ riffgraph_tools_dir }}/sfizz-{{ riffgraph_sfizz_version }}/build
+riffgraph_sfizz_binary: >-
+  {{ riffgraph_tools_dir }}/sfizz-{{ riffgraph_sfizz_version }}/bin/sfizz_render
+
+riffgraph_nam_core_version: "0.5.4"
+riffgraph_nam_core_commit: 1f42f88535884450104b8711d7595019afa0495b
+riffgraph_nam_core_url: >-
+  https://github.com/sdatkinson/NeuralAmpModelerCore/archive/{{ riffgraph_nam_core_commit }}.tar.gz
+riffgraph_nam_core_sha256: ac10cdabb0a7408e660d5cc403d1260c966bc839b5b5bb71511b663ca6e4a0cf
+riffgraph_nam_core_archive: >-
+  {{ riffgraph_asset_cache_dir }}/NeuralAmpModelerCore-{{ riffgraph_nam_core_commit }}.tar.gz
+riffgraph_nam_core_dir: >-
+  {{ riffgraph_tools_dir }}/neural-amp-modeler-core-{{ riffgraph_nam_core_version }}
+riffgraph_nam_core_source_dir: "{{ riffgraph_nam_core_dir }}/source"
+riffgraph_nam_core_build_dir: "{{ riffgraph_nam_core_dir }}/build"
+riffgraph_nam_render_binary: "{{ riffgraph_nam_core_dir }}/bin/nam-render"
+
+riffgraph_nam_audiodsp_commit: 0827c6c2fc0deced568536142ea86f189e0b98a1
+riffgraph_nam_audiodsp_url: >-
+  https://github.com/sdatkinson/AudioDSPTools/archive/{{ riffgraph_nam_audiodsp_commit }}.tar.gz
+riffgraph_nam_audiodsp_sha256: 2557d2ee58481b1bafa63e528b9c6f2b2ae67adb2f55e2c1d13c90ea99b420d5
+riffgraph_nam_audiodsp_archive: >-
+  {{ riffgraph_asset_cache_dir }}/AudioDSPTools-{{ riffgraph_nam_audiodsp_commit }}.tar.gz
+
+riffgraph_nam_eigen_commit: bc3b39870ecb690a623a3f49149a358b95c5781d
+riffgraph_nam_eigen_url: >-
+  https://gitlab.com/libeigen/eigen/-/archive/{{ riffgraph_nam_eigen_commit }}/eigen-{{ riffgraph_nam_eigen_commit }}.tar.gz
+riffgraph_nam_eigen_sha256: 5f6557d1aca6e959a4b955c55f2935261fd30de59c0c79e35bc6d5cbe1de22d1
+riffgraph_nam_eigen_archive: >-
+  {{ riffgraph_asset_cache_dir }}/eigen-{{ riffgraph_nam_eigen_commit }}.tar.gz
+
+riffgraph_bass_nam_model_name: AlphaOmegaSVT1176-A2
+riffgraph_bass_nam_model_url: >-
+  https://api.tone3000.com/storage/v1/object/public/models/d8d64a91d25af26f_a2.nam
+riffgraph_bass_nam_model_sha256: 5d6ea6ec732f92909d4d8e32493f2c837cc3cce9a8790dd1d5b350e85718893d
+riffgraph_bass_nam_model: >-
+  {{ riffgraph_active_instruments_dir }}/alpha-omega-svt-1176-a2.nam
+
+riffgraph_jazz_guitar_nam_model_name: Two-Rock-Studio-Signature-All-5s-A2
+riffgraph_jazz_guitar_nam_model_url: >-
+  https://api.tone3000.com/storage/v1/object/public/models/828dc72bf50ef40d_a2.nam
+riffgraph_jazz_guitar_nam_model_sha256: a96c92bc4779a852e7e4a73ac08a5717db062bb79ecda4eec042b40452d10eca
+riffgraph_jazz_guitar_nam_model: >-
+  {{ riffgraph_active_instruments_dir }}/two-rock-studio-signature-all-5s-a2.nam
+
+riffgraph_dragonfly_reverb_apt_version: "3.2.10-3build2"
+riffgraph_lv2file_apt_version: "0.95-4"
+riffgraph_lv2file_binary: /usr/bin/lv2file
+riffgraph_lv2file_sha256: 825396ea6858ed7f950c638c03ca61760771700d57d86a488919dcf4df7e676a
+riffgraph_system_lv2_root: /usr/lib/lv2
+riffgraph_managed_lv2_root: "{{ riffgraph_root }}/lv2"
+riffgraph_dragonfly_plate_system_bundle: >-
+  {{ riffgraph_system_lv2_root }}/DragonflyPlateReverb.lv2
+riffgraph_dragonfly_plate_bundle: >-
+  {{ riffgraph_managed_lv2_root }}/DragonflyPlateReverb.lv2
+riffgraph_dragonfly_plate_plugin: >-
+  {{ riffgraph_dragonfly_plate_bundle }}/DragonflyPlateReverb_dsp.so
+riffgraph_dragonfly_plate_system_plugin: >-
+  {{ riffgraph_dragonfly_plate_system_bundle }}/DragonflyPlateReverb_dsp.so
+riffgraph_dragonfly_plate_plugin_sha256: 6c226522c8939e0ae25c875079b2c6ca0f1b8a9b69ead494b846bfbc81b31622
+
+riffgraph_shinyguitar_version: "1.002"
+riffgraph_shinyguitar_url: >-
+  https://github.com/sfzinstruments/karoryfer.shinyguitar/releases/download/v{{ riffgraph_shinyguitar_version }}/Karoryfer.Shinyguitar.v{{ riffgraph_shinyguitar_version }}.zip
+riffgraph_shinyguitar_sha256: 23cf4030cbf9ce9e2c84d7cbb1c022fbca124bfff0ad118a14eda7cf6c921d7b
+riffgraph_shinyguitar_archive: >-
+  {{ riffgraph_asset_cache_dir }}/Karoryfer.Shinyguitar.v{{ riffgraph_shinyguitar_version }}.zip
+riffgraph_shinyguitar_dir: >-
+  {{ riffgraph_instruments_dir }}/karoryfer-shinyguitar-{{ riffgraph_shinyguitar_version }}
+
+riffgraph_distorted_guitar_version: "2022-09-11"
+riffgraph_distorted_guitar_url: >-
+  https://freepats.zenvoid.org/ElectricGuitar/FSBS-EGuitar/EGuitarFSBS-bridge-dist1-SFZ%2BFLAC-20220911.7z
+riffgraph_distorted_guitar_sha256: 91746c8ce32e1fee9af0618503f83cd805d3638c180eac521810f7487f115185
+riffgraph_distorted_guitar_archive: >-
+  {{ riffgraph_asset_cache_dir }}/EGuitarFSBS-bridge-dist1-SFZ+FLAC-20220911.7z
+riffgraph_distorted_guitar_dir: >-
+  {{ riffgraph_instruments_dir }}/freepats-distorted-guitar-{{ riffgraph_distorted_guitar_version }}
+
+riffgraph_growlybass_version: "1.002"
+riffgraph_growlybass_url: >-
+  https://github.com/sfzinstruments/karoryfer.growlybass/releases/download/v{{ riffgraph_growlybass_version }}/Karoryfer.Growlybass.v{{ riffgraph_growlybass_version }}.zip
+riffgraph_growlybass_sha256: b92dca75494fa39d6e8d8b8addaabfe70c5aaa59b5f9a0f624be6de51a2374bc
+riffgraph_growlybass_archive: >-
+  {{ riffgraph_asset_cache_dir }}/Karoryfer.Growlybass.v{{ riffgraph_growlybass_version }}.zip
+riffgraph_growlybass_dir: >-
+  {{ riffgraph_instruments_dir }}/karoryfer-growlybass-{{ riffgraph_growlybass_version }}
+
+riffgraph_pad_version: "2019-07-30"
+riffgraph_pad_url: >-
+  https://github.com/freepats/new-age/releases/download/{{ riffgraph_pad_version }}/NewAge-SFZ%2BFLAC-20190730.7z
+riffgraph_pad_sha256: 355c686eecaac4d9857a8aecf9962eee7bb6d69bd48c55608f47185da63f5d9e
+riffgraph_pad_archive: >-
+  {{ riffgraph_asset_cache_dir }}/NewAge-SFZ+FLAC-20190730.7z
+riffgraph_pad_dir: "{{ riffgraph_instruments_dir }}/freepats-new-age-{{ riffgraph_pad_version }}"
+
+riffgraph_crocell_version: "1.1"
+riffgraph_crocell_url: https://drumgizmo.org/kits/CrocellKit/CrocellKit1_1.zip
+riffgraph_crocell_sha256: 341d1f23e5867fd9d465bbcf3e4cd2f805bb7d7c4f519ba9ec73daae8161d5c6
+riffgraph_crocell_archive: "{{ riffgraph_asset_cache_dir }}/CrocellKit1_1.zip"
+riffgraph_crocell_dir: "{{ riffgraph_instruments_dir }}/crocellkit-{{ riffgraph_crocell_version }}"
+
+riffgraph_jazz_guitar_sfz: "{{ riffgraph_active_instruments_dir }}/jazz-guitar.sfz"
+riffgraph_distorted_guitar_sfz: "{{ riffgraph_active_instruments_dir }}/distorted-guitar.sfz"
+riffgraph_finger_bass_sfz: "{{ riffgraph_active_instruments_dir }}/finger-bass.sfz"
+riffgraph_pad_sfz: "{{ riffgraph_active_instruments_dir }}/pad.sfz"
+riffgraph_drumkit: "{{ riffgraph_active_instruments_dir }}/crocellkit.xml"
+riffgraph_drum_midimap: "{{ riffgraph_active_instruments_dir }}/crocell-midimap.xml"
+riffgraph_command: /usr/local/bin/riffgraph

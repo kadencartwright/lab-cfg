@@ -1,0 +1,11 @@
+---
+- name: Install ChatGPT desktop
+  hosts: openai_chatgpt_desktop_hosts
+  gather_facts: true
+  become: true
+  remote_user: agent
+  vars:
+    ansible_user: agent
+    ansible_ssh_private_key_file: /home/k/.ssh/id_ed25519_github_to_bitbucket_key
+  roles:
+    - role: openai_chatgpt_desktop

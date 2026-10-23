@@ -2,6 +2,7 @@
 remote_agent_dev_user: agent
 remote_agent_dev_user_home: "/home/{{ remote_agent_dev_user }}"
 remote_agent_dev_user_shell: /bin/bash
+remote_agent_dev_password_hash: ""
 remote_agent_dev_code_dir: "{{ remote_agent_dev_user_home }}/code"
 remote_agent_dev_codex_dir: "{{ remote_agent_dev_user_home }}/.codex"
 remote_agent_dev_codex_config_path: "{{ remote_agent_dev_codex_dir }}/config.toml"
@@ -16,7 +17,20 @@ remote_agent_dev_github_cli_package: gh
 remote_agent_dev_github_user: kadencartwright
 remote_agent_dev_key_sync_packages:
   - curl
+  - util-linux
 remote_agent_dev_key_sync_script_path: /usr/local/sbin/sync-agent-github-keys
 remote_agent_dev_key_sync_service_name: sync-agent-github-keys.service
 remote_agent_dev_key_sync_timer_name: sync-agent-github-keys.timer
 remote_agent_dev_key_sync_interval: 5min
+remote_agent_dev_paseo_npm_package: "@getpaseo/cli"
+remote_agent_dev_paseo_version: "0.2.5"
+remote_agent_dev_paseo_home: "{{ remote_agent_dev_user_home }}/.paseo"
+remote_agent_dev_paseo_config_path: "{{ remote_agent_dev_paseo_home }}/config.json"
+remote_agent_dev_paseo_service_name: paseo.service
+remote_agent_dev_paseo_listen: "127.0.0.1:6767"
+remote_agent_dev_paseo_hostnames:
+  - localhost
+  - .localhost
+remote_agent_dev_paseo_cors_allowed_origins:
+  - https://app.paseo.sh
+remote_agent_dev_paseo_password_hash: ""

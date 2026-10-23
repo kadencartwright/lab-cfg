@@ -7,6 +7,17 @@
       - libsndfile1
       - python3-pip
       - python3-venv
+      - cargo
+      - build-essential
+      - clang
+      - cmake
+      - git
+      - libclang-dev
+      - libopus-dev
+      - libpcaudio-dev
+      - libsonic-dev
+      - pkg-config
+      - rustfmt
     state: present
     update_cache: true
     cache_valid_time: 3600
@@ -31,12 +42,24 @@
     cmd: "python3 -m venv {{ tts_pipeline_venv }}"
     creates: "{{ tts_pipeline_venv }}/bin/python"
 
+- name: Create forced-alignment virtual environment
+  ansible.builtin.command:
+    cmd: "python3 -m venv {{ tts_pipeline_alignment_venv }}"
+    creates: "{{ tts_pipeline_alignment_venv }}/bin/python"
+
 - name: Install pinned text-to-speech Python packages
   ansible.builtin.pip:
     name:
       - "kokoro-onnx=={{ tts_pipeline_kokoro_onnx_version }}"
       - soundfile
     virtualenv: "{{ tts_pipeline_venv }}"
+
+- name: Install pinned forced-alignment packages
+  ansible.builtin.pip:
+    name:
+      - "stable-ts=={{ tts_pipeline_stable_ts_version }}"
+      - soundfile
+    virtualenv: "{{ tts_pipeline_alignment_venv }}"
 
 - name: Download Kokoro ONNX model
   ansible.builtin.get_url:
@@ -54,6 +77,47 @@
     group: "{{ tts_pipeline_group }}"
     mode: "0644"
 
+- name: Check out timestamp-enabled Kokoro renderer
+  ansible.builtin.git:
+    repo: https://github.com/lucasjinreal/Kokoros.git
+    dest: "{{ tts_pipeline_kokoros_root }}"
+    version: "{{ tts_pipeline_kokoros_revision }}"
+  become_user: "{{ tts_pipeline_user }}"
+
+- name: Create timestamp-enabled Kokoro model directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ tts_pipeline_user }}"
+    group: "{{ tts_pipeline_group }}"
+    mode: "0755"
+  loop:
+    - "{{ tts_pipeline_kokoros_root }}/checkpoints"
+    - "{{ tts_pipeline_kokoros_root }}/data"
+
+- name: Download timestamp-enabled Kokoro model
+  ansible.builtin.get_url:
+    url: "{{ tts_pipeline_timestamped_model_url }}"
+    dest: "{{ tts_pipeline_kokoros_root }}/checkpoints/kokoro-v1.0.onnx"
+    owner: "{{ tts_pipeline_user }}"
+    group: "{{ tts_pipeline_group }}"
+    mode: "0644"
+
+- name: Link Kokoro voices into timestamp-enabled renderer
+  ansible.builtin.file:
+    src: "{{ tts_pipeline_model_dir }}/voices-v1.0.bin"
+    dest: "{{ tts_pipeline_kokoros_root }}/data/voices-v1.0.bin"
+    state: link
+    owner: "{{ tts_pipeline_user }}"
+    group: "{{ tts_pipeline_group }}"
+
+- name: Build timestamp-enabled Kokoro renderer
+  ansible.builtin.command:
+    cmd: cargo build --release
+    chdir: "{{ tts_pipeline_kokoros_root }}"
+    creates: "{{ tts_pipeline_kokoros_root }}/target/release/koko"
+  become_user: "{{ tts_pipeline_user }}"
+
 - name: Install text-to-speech pipeline
   ansible.builtin.template:
     src: patristic-tts.py.j2
@@ -66,6 +130,22 @@
   ansible.builtin.template:
     src: patristic-tts-render.sh.j2
     dest: "{{ tts_pipeline_root }}/patristic-tts-render"
+    owner: "{{ tts_pipeline_user }}"
+    group: "{{ tts_pipeline_group }}"
+    mode: "0755"
+
+- name: Install text-to-speech timing generator
+  ansible.builtin.template:
+    src: patristic-tts-timings.py.j2
+    dest: "{{ tts_pipeline_root }}/patristic-tts-timings"
+    owner: "{{ tts_pipeline_user }}"
+    group: "{{ tts_pipeline_group }}"
+    mode: "0755"
+
+- name: Install text-to-speech forced aligner
+  ansible.builtin.template:
+    src: patristic-tts-align.py.j2
+    dest: "{{ tts_pipeline_root }}/patristic-tts-align"
     owner: "{{ tts_pipeline_user }}"
     group: "{{ tts_pipeline_group }}"
     mode: "0755"

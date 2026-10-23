@@ -1,0 +1,22 @@
+---
+- name: Reload Hermes browser AppArmor profile
+  ansible.builtin.command:
+    argv:
+      - apparmor_parser
+      - -r
+      - "{{ hermes_agent_apparmor_profile_path }}"
+  changed_when: true
+
+- name: Restart Hermes gateway
+  become: true
+  become_user: "{{ hermes_agent_user }}"
+  ansible.builtin.systemd_service:
+    name: hermes-gateway.service
+    scope: user
+    state: restarted
+    daemon_reload: true
+  environment:
+    HOME: "{{ hermes_agent_user_home }}"
+    HERMES_HOME: "{{ hermes_agent_home }}"
+    XDG_RUNTIME_DIR: "/run/user/{{ hermes_agent_uid }}"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ hermes_agent_uid }}/bus"

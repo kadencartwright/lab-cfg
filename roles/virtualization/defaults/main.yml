@@ -1,0 +1,18 @@
+---
+virtualization_packages:
+  - bridge-utils
+  - libvirt-clients
+  - libvirt-daemon-config-network
+  - libvirt-daemon-system
+  - ovmf
+  - qemu-system-x86
+  - qemu-utils
+  - swtpm
+  - virt-manager
+  - virtinst
+
+virtualization_users:
+  - agent
+
+virtualization_network: default
+virtualization_network_definition: /usr/share/libvirt/networks/default.xml

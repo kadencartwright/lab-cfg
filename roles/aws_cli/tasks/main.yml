@@ -1,0 +1,70 @@
+---
+- name: Require supported AWS CLI installer platform
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.system == 'Linux'
+      - ansible_facts.architecture == 'x86_64'
+
+- name: Install archive dependency
+  ansible.builtin.apt:
+    name: unzip
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Inspect official AWS CLI installation
+  ansible.builtin.command: /usr/local/bin/aws --version
+  register: aws_cli_existing
+  changed_when: false
+  failed_when: false
+
+- name: Install pinned official AWS CLI
+  when: >-
+    aws_cli_existing.rc != 0 or
+    not aws_cli_existing.stdout.startswith('aws-cli/' ~ aws_cli_version ~ ' ')
+  block:
+    - name: Create versioned installer cache
+      ansible.builtin.file:
+        path: "{{ aws_cli_cache_dir }}/{{ aws_cli_version }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Download checksum-pinned AWS CLI installer
+      ansible.builtin.get_url:
+        url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-{{ aws_cli_version }}.zip"
+        dest: "{{ aws_cli_cache_dir }}/{{ aws_cli_version }}.zip"
+        checksum: "sha256:{{ aws_cli_archive_sha256 }}"
+        mode: "0644"
+        timeout: 120
+
+    - name: Extract AWS CLI installer
+      ansible.builtin.unarchive:
+        src: "{{ aws_cli_cache_dir }}/{{ aws_cli_version }}.zip"
+        dest: "{{ aws_cli_cache_dir }}/{{ aws_cli_version }}"
+        remote_src: true
+
+    - name: Run official AWS CLI installer
+      ansible.builtin.command:
+        argv:
+          - "{{ aws_cli_cache_dir }}/{{ aws_cli_version }}/aws/install"
+          - --install-dir
+          - /usr/local/aws-cli
+          - --bin-dir
+          - /usr/local/bin
+          - --update
+      changed_when: true
+
+- name: Verify pinned AWS CLI version
+  ansible.builtin.command: /usr/local/bin/aws --version
+  register: aws_cli_verified
+  changed_when: false
+  failed_when: >-
+    aws_cli_verified.rc != 0 or
+    not aws_cli_verified.stdout.startswith('aws-cli/' ~ aws_cli_version ~ ' ')
+
+- name: Remove superseded distribution AWS CLI package
+  ansible.builtin.apt:
+    name: awscli
+    state: absent

@@ -1,0 +1,77 @@
+_config_version: 33
+
+model:
+  provider: {{ hermes_agent_model_provider | to_json }}
+  default: {{ hermes_agent_model | to_json }}
+
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+  memory_char_limit: 4000
+  user_char_limit: 2500
+  nudge_interval: 10
+  flush_min_turns: 6
+
+plugins:
+  enabled:
+    - t3_code
+    - web-ddgs
+
+web:
+  search_backend: ddgs
+  extract_backend: native
+  extract_char_limit: 15000
+
+platform_toolsets:
+  cli:
+    - web
+    - browser
+    - terminal
+    - file
+    - memory
+    - skills
+    - t3_code
+
+mcp_servers:
+  slack:
+    url: {{ hermes_slack_mcp_url | to_json }}
+    auth: oauth
+    enabled: {{ hermes_slack_mcp_enabled | bool | lower }}
+    connect_timeout: 360
+    oauth:
+      client_id: "${SLACK_MCP_CLIENT_ID}"
+      client_secret: "${SLACK_MCP_CLIENT_SECRET}"
+    tools:
+      include:
+        - "*search*"
+        - "*read*"
+        - "*history*"
+        - "*replies*"
+        - "*list_channel_members*"
+      resources: false
+      prompts: false
+    sampling:
+      enabled: false
+    elicitation:
+      enabled: false
+  jira:
+    url: {{ hermes_jira_mcp_url | to_json }}
+    auth: oauth
+    enabled: {{ hermes_jira_mcp_enabled | bool | lower }}
+    connect_timeout: 360
+    tools:
+      include:
+        - atlassianUserInfo
+        - getAccessibleAtlassianResources
+        - searchAtlassian
+        - fetchAtlassian
+        - searchJiraIssuesUsingJql
+        - getJiraIssue
+        - getJiraIssueRemoteIssueLinks
+        - getVisibleJiraProjects
+      resources: false
+      prompts: false
+    sampling:
+      enabled: false
+    elicitation:
+      enabled: false

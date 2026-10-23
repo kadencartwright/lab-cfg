@@ -1,0 +1,63 @@
+---
+- name: Install OpenCode installer dependencies
+  ansible.builtin.apt:
+    name: [ca-certificates, curl, bash, tar]
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create the installer directory
+  ansible.builtin.file:
+    path: "{{ opencode_cli_installer_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download the official OpenCode v2 installer
+  ansible.builtin.get_url:
+    url: https://opencode.ai/v2/install
+    dest: "{{ opencode_cli_installer_path }}"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Read the native OpenCode version
+  become_user: "{{ opencode_cli_user }}"
+  ansible.builtin.command: "{{ opencode_cli_binary_path }} --version"
+  register: opencode_cli_before
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Install the pinned native OpenCode release
+  become_user: "{{ opencode_cli_user }}"
+  ansible.builtin.command:
+    argv:
+      - /bin/bash
+      - "{{ opencode_cli_installer_path }}"
+      - --version
+      - "{{ opencode_cli_version }}"
+      - --no-modify-path
+  environment:
+    HOME: "{{ opencode_cli_user_home }}"
+  when: >-
+    opencode_cli_before.rc != 0 or
+    (opencode_cli_before.stdout | trim | regex_replace('^opencode v?', '')) != opencode_cli_version
+  register: opencode_cli_install
+
+- name: Make native OpenCode available to shells and services
+  ansible.builtin.file:
+    src: "{{ opencode_cli_binary_path }}"
+    dest: /usr/local/bin/opencode
+    state: link
+  register: opencode_cli_link
+  when: not ansible_check_mode
+
+- name: Verify the default OpenCode version
+  become_user: "{{ opencode_cli_user }}"
+  ansible.builtin.command: /usr/local/bin/opencode --version
+  changed_when: false
+  register: opencode_cli_after
+  failed_when: (opencode_cli_after.stdout | trim | regex_replace('^opencode v?', '')) != opencode_cli_version
+  when: not ansible_check_mode

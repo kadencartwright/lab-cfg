@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export HF_HOME={{ riffgraph_hf_home | quote }}
+export PYTHONDONTWRITEBYTECODE=1
+export RIFFGRAPH_MUSCRIPTOR={{ (riffgraph_current_link ~ '/worker/bin/muscriptor') | quote }}
+export RIFFGRAPH_MUSCRIPTOR_VERSION
+IFS= read -r RIFFGRAPH_MUSCRIPTOR_VERSION < \
+  {{ (riffgraph_current_link ~ '/worker-version') | quote }}
+export RIFFGRAPH_SOUNDFONT={{ riffgraph_soundfont | quote }}
+export RIFFGRAPH_SFIZZ_RENDER={{ riffgraph_sfizz_binary | quote }}
+export RIFFGRAPH_DRUMGIZMO=/usr/bin/drumgizmo
+export RIFFGRAPH_FFMPEG=/usr/bin/ffmpeg
+export RIFFGRAPH_NAM_RENDER={{ riffgraph_nam_render_binary | quote }}
+export RIFFGRAPH_LV2FILE={{ riffgraph_lv2file_binary | quote }}
+export LV2_PATH={{ riffgraph_managed_lv2_root | quote }}
+export RIFFGRAPH_JAZZ_GUITAR_SFZ={{ riffgraph_jazz_guitar_sfz_source | quote }}
+export RIFFGRAPH_JAZZ_GUITAR_NAM_MODEL={{ riffgraph_jazz_guitar_nam_model | quote }}
+export RIFFGRAPH_DISTORTED_GUITAR_SFZ={{ riffgraph_distorted_guitar_sfz_source | quote }}
+export RIFFGRAPH_FINGER_BASS_SFZ={{ riffgraph_finger_bass_sfz_source | quote }}
+export RIFFGRAPH_BASS_NAM_MODEL={{ riffgraph_bass_nam_model | quote }}
+export RIFFGRAPH_PAD_SFZ={{ riffgraph_pad_sfz_source | quote }}
+export RIFFGRAPH_DRUMKIT={{ riffgraph_drumkit_source | quote }}
+export RIFFGRAPH_DRUM_MIDIMAP={{ riffgraph_drum_midimap | quote }}
+export RIFFGRAPH_DRAGONFLY_PLATE_PLUGIN={{ riffgraph_dragonfly_plate_plugin | quote }}
+
+exec {{ (riffgraph_core_venv ~ '/bin/riffgraph') | quote }} "$@"

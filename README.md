@@ -101,13 +101,42 @@ Host utility installs:
 
 ```bash
 make remote-agent-dev
+make openai-codex-cli
+make claude-code
+make opencode
+make chatgpt-desktop
+make virtualization
 make tts-pipeline
+make riffgraph
 ```
 
 The remote agent development role creates an `agent` user with passwordless
 sudo, seeds its SSH authorized keys from the `lab` user, syncs new public keys
-from `github.com/kadencartwright.keys` every five minutes, then installs Codex
-CLI, Tailscale, and GitHub CLI.
+from `github.com/kadencartwright.keys` every five minutes, then installs Fast
+Node Manager (FNM), Codex CLI, Tailscale, GitHub CLI, a password-protected Paseo
+daemon. FNM manages the interactive Node
+versions for `agent`, keeps Node 22 and Node 24 installed, defaults to Node 24,
+and automatically follows `.node-version` and `.nvmrc` files. The system Node
+installation remains the stable runtime for systemd services. Paseo listens on
+the host's Tailscale address and runs as a systemd service under the `agent` account.
+
+The focused OpenAI playbooks install the pinned Codex CLI standalone release
+for the `agent` user and the native ChatGPT desktop app on `lab-um890`. The
+desktop bootstrap package configures OpenAI's signed APT repository, and later
+Ansible runs upgrade the `chatgpt` package from that repository.
+
+`make claude-code` installs Claude Code for the existing `agent` user on
+`remote_agent_dev_hosts` using the [official native installer](https://code.claude.com/docs/en/setup).
+The launcher is `/home/agent/.local/bin/claude`; native installs update automatically.
+Reruns skip installation when the launcher exists and verify `claude --version`.
+Run `claude` as `agent` to complete interactive sign-in. To apply directly from
+`lab-um890`, use `make claude-code ANSIBLE_PLAYBOOK='ansible-playbook --connection=local --limit lab-um890'`.
+
+The virtualization role equips `lab-um890` with hardware-accelerated QEMU/KVM,
+libvirt, UEFI and virtual TPM support, and Virtual Machine Manager. It enables
+the default NAT network and grants the `agent` account access to the system
+libvirt connection. A new login session is required before an already logged-in
+shell sees the new `libvirt` and `kvm` group memberships.
 
 The text-to-speech role configures `lab-um890` with a pinned Kokoro-ONNX CPU
 environment under `/opt/patristic-tts`. Its `patristic-tts` command accepts a
@@ -116,6 +145,11 @@ and assembles a final narration without holding the complete work in memory.
 The `patristic-tts-render` production wrapper retains master WAV files under
 `masters/` and creates 48 kbps mono Opus delivery files under `delivery/`.
 It uses the `bm_george` voice by default for the library's production queue.
+
+The RiffGraph role configures `lab-um890` as a CPU-first music workbench with
+MuScriptor, local musical analysis, MIDI export, and FluidSynth rendering.
+Model authentication is copied from the controller at deploy time and is never
+stored in Git. See [the RiffGraph runbook](docs/riffgraph.md).
 
 ## Secret Management
 
@@ -181,6 +215,7 @@ not a goal right now.
 ## Operational Docs
 
 - [Architecture notes](docs/architecture.md)
+- [Hermes Agent EA and T3 delegation](docs/hermes-agent.md)
 - [GitOps notes](docs/gitops.md)
 - [Tailscale operator notes](docs/tailscale-operator.md)
 - [Host Tailscale notes](docs/tailscale-hosts.md)
@@ -193,3 +228,22 @@ not a goal right now.
 - Run a destructive K3s restore rehearsal during a maintenance window.
 - Decide on persistent storage policy before adding Longhorn.
 - Move image releases from mutable tags toward immutable tags or digests.
+
+### Update agent tools
+
+`make agent-tools` applies the pinned Codex CLI, Hermes T3 CLI, and OpenCode v2
+updates to `remote_agent_dev_hosts`. It expects the existing T3 system service.
+The Hermes CLI and T3 server share the same version pin, with a systemd override
+pointing the server at the installed CLI. Version changes restart T3 and check
+its HTTP endpoint. OpenCode is pinned to native release 2.1.4 using the official
+v2 installer, with `/usr/local/bin/opencode` pointing to the agent-owned binary.
+The older snap remains installed, but the native command takes precedence.
+`make opencode` applies only the OpenCode update and restarts T3 when it changes.
+
+`playbooks/retire-agent-bridges.yml` removes the retired OpenBridge user services and Orca system
+service, installed runtimes, configuration, and Orca status plugin. It preserves source checkouts and Android
+emulator images.
+
+To apply on the managed host itself, use `-c local --limit lab-um890` with the
+playbook. Existing Codex processes keep their loaded version until restarted;
+new processes use the updated binary.

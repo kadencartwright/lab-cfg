@@ -1,0 +1,8 @@
+# Managed by Ansible. This preserves Ubuntu's global restriction while allowing
+# the one version-pinned agent-browser Chromium installed for Hermes.
+abi <abi/4.0>,
+include <tunables/global>
+
+profile hermes-playwright-chromium {{ hermes_agent_playwright_chromium_path }} flags=(unconfined) {
+  userns,
+}

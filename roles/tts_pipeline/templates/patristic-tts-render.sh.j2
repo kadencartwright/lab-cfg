@@ -13,6 +13,7 @@ input="${4:-{{ tts_pipeline_input_dir }}/$slug.txt}"
 master_dir="{{ tts_pipeline_master_dir }}/$slug"
 master="$master_dir/$slug-$voice.wav"
 delivery="{{ tts_pipeline_delivery_dir }}/$slug-$voice.opus"
+timings="{{ tts_pipeline_delivery_dir }}/$slug-$voice.words.json"
 
 mkdir -p "$master_dir"
 "{{ tts_pipeline_root }}/patristic-tts" \
@@ -33,7 +34,13 @@ ffmpeg -hide_banner -loglevel error -y \
   -application audio \
   "$delivery"
 
-sha256sum "$input" "$master" "$delivery" > "$master_dir/checksums.sha256"
+if ! "{{ tts_pipeline_root }}/patristic-tts-align" --input "$input" --master "$master" --output "$timings"; then
+  echo "Forced alignment failed; using synthesis-chunk estimate" >&2
+  "{{ tts_pipeline_root }}/patristic-tts-timings" --input "$input" --master "$master" --output "$timings"
+fi
+
+sha256sum "$input" "$master" "$delivery" "$timings" > "$master_dir/checksums.sha256"
 
 echo "Master: $master"
 echo "Delivery: $delivery"
+echo "Timings: $timings"

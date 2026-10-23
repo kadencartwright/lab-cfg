@@ -1,0 +1,375 @@
+---
+- name: Install Hermes operating-system dependencies
+  ansible.builtin.apt:
+    name: "{{ hermes_agent_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Look up Hermes user
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ hermes_agent_user }}"
+
+- name: Record Hermes user id
+  ansible.builtin.set_fact:
+    hermes_agent_uid: "{{ ansible_facts.getent_passwd[hermes_agent_user][1] }}"
+
+- name: Create Hermes parent directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ hermes_agent_user }}"
+    group: "{{ hermes_agent_user }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ hermes_agent_user_home }}/.cache"
+      mode: "0755"
+    - path: "{{ hermes_agent_user_home }}/.local/bin"
+      mode: "0755"
+    - path: "{{ hermes_agent_user_home }}/.local/share"
+      mode: "0755"
+    - path: "{{ hermes_agent_home }}"
+      mode: "0700"
+
+- name: Download checksum-pinned Hermes installer
+  ansible.builtin.get_url:
+    url: "{{ hermes_agent_installer_url }}"
+    dest: "{{ hermes_agent_installer_path }}"
+    checksum: "sha256:{{ hermes_agent_installer_sha256 }}"
+    owner: "{{ hermes_agent_user }}"
+    group: "{{ hermes_agent_user }}"
+    mode: "0755"
+    timeout: 120
+
+- name: Inspect installed Hermes revision
+  become: true
+  become_user: "{{ hermes_agent_user }}"
+  ansible.builtin.command:
+    argv:
+      - git
+      - -C
+      - "{{ hermes_agent_install_dir }}"
+      - rev-parse
+      - HEAD
+  register: hermes_installed_revision
+  changed_when: false
+  failed_when: false
+  environment:
+    HOME: "{{ hermes_agent_user_home }}"
+
+- name: Install pinned Hermes release for the development user
+  become: true
+  become_user: "{{ hermes_agent_user }}"
+  ansible.builtin.command:
+    argv:
+      - "{{ hermes_agent_installer_path }}"
+      - --skip-setup
+      - --non-interactive
+      - --dir
+      - "{{ hermes_agent_install_dir }}"
+      - --hermes-home
+      - "{{ hermes_agent_home }}"
+      - --commit
+      - "{{ hermes_agent_commit }}"
+      - --force-commit
+  when: hermes_installed_revision.rc != 0 or hermes_installed_revision.stdout | trim != hermes_agent_commit
+  notify: Restart Hermes gateway
+  environment:
+    HOME: "{{ hermes_agent_user_home }}"
+    HERMES_HOME: "{{ hermes_agent_home }}"
+    PATH: "{{ hermes_agent_user_home }}/.local/bin:/usr/local/bin:/usr/bin:/bin"
+
+- name: Create Hermes managed directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ hermes_agent_user }}"
+    group: "{{ hermes_agent_user }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ hermes_agent_home }}/plugins/t3_code"
+      mode: "0755"
+    - path: "{{ hermes_agent_home }}/skills/executive-assistant"
+      mode: "0755"
+    - path: "{{ hermes_agent_home }}/memories"
+      mode: "0700"
+    - path: "{{ hermes_t3_bridge_dir }}"
+      mode: "0755"
+    - path: "{{ hermes_t3_smoke_repo }}"
+      mode: "0755"
+
+- name: Install pinned key-free web search provider dependency
+  become: true
+  become_user: "{{ hermes_agent_user }}"
+  ansible.builtin.command:
+    argv:
+      - "{{ hermes_agent_home }}/bin/uv"
+      - pip
+      - install
+      - --python
+      - "{{ hermes_agent_install_dir }}/venv/bin/python"
+      - "ddgs=={{ hermes_agent_ddgs_version }}"
+  register: hermes_ddgs_install
+  changed_when: >-
+    'Installed ' in (hermes_ddgs_install.stdout + hermes_ddgs_install.stderr) or
+    'Updated ' in (hermes_ddgs_install.stdout + hermes_ddgs_install.stderr)
+  environment:
+    HOME: "{{ hermes_agent_user_home }}"
+
+- name: Verify pinned agent-browser Chromium binary exists
+  ansible.builtin.stat:
+    path: "{{ hermes_agent_playwright_chromium_path }}"
+  register: hermes_playwright_chromium
+
+- name: Require the pinned agent-browser Chromium binary
+  ansible.builtin.assert:
+    that:
+      - hermes_playwright_chromium.stat.exists
+      - hermes_playwright_chromium.stat.executable
+    fail_msg: >-
+      Hermes did not install the expected agent-browser Chromium binary at
+      {{ hermes_agent_playwright_chromium_path }}. Update the pinned browser
+      path when upgrading Hermes/agent-browser.
+
+- name: Allow only pinned agent-browser Chromium to use its user-namespace sandbox
+  ansible.builtin.template:
+    src: hermes-playwright-chromium.apparmor.j2
+    dest: "{{ hermes_agent_apparmor_profile_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload Hermes browser AppArmor profile
+
+- name: Configure Hermes
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: "{{ hermes_agent_home }}/config.yaml"
+    owner: "{{ hermes_agent_user }}"
+    group: "{{ hermes_agent_user }}"
+    mode: "0600"
+  notify: Restart Hermes gateway
+
+- name: Install Hermes EA identity
+  ansible.builtin.template:
+    src: SOUL.md.j2
+    dest: "{{ hermes_agent_home }}/SOUL.md"
+    owner: "{{ hermes_agent_user }}"
+    group: "{{ hermes_agent_user }}"
+    mode: "0644"
+  notify: Restart Hermes gateway
+
+- name: Install Hermes executive-assistant skill
+  ansible.builtin.copy:
+    src: executive_assistant/SKILL.md
+    dest: "{{ hermes_agent_home }}/skills/executive-assistant/SKILL.md"
+    owner: "{{ hermes_agent_user }}"
+    group: "{{ hermes_agent_user }}"
+    mode: "0644"
+  notify: Restart Hermes gateway
+
+- name: Install Hermes T3 native plugin
+  ansible.builtin.copy:
+    src: t3_plugin/
+    dest: "{{ hermes_agent_home }}/plugins/t3_code/"
+    owner: "{{ hermes_agent_user }}"
+    group: "{{ hermes_agent_user }}"
+    mode: preserve
+  notify: Restart Hermes gateway
+
+- name: Install T3 project mappings
+  ansible.builtin.template:
+    src: t3-projects.json.j2
+    dest: "{{ hermes_t3_projects_path }}"
+    owner: "{{ hermes_agent_user }}"
+    group: "{{ hermes_agent_user }}"
+    mode: "0644"
+  notify: Restart Hermes gateway
+
+- name: Install Hermes secret environment example
+  ansible.builtin.copy:
+    src: hermes.env.example
+    dest: "{{ hermes_agent_home }}/.env.example"
+    owner: "{{ hermes_agent_user }}"
+    group: "{{ hermes_agent_user }}"
+    mode: "0600"
+
+- name: Create Hermes secret environment without overwriting credentials
+  ansible.builtin.copy:
+    src: hermes.env.example
+    dest: "{{ hermes_agent_home }}/.env"
+    owner: "{{ hermes_agent_user }}"
+    group: "{{ hermes_agent_user }}"
+    mode: "0600"
+    force: false
+
+- name: Seed persistent Hermes memory files without replacing learned memory
+  ansible.builtin.copy:
+    content: "{{ item.content }}"
+    dest: "{{ hermes_agent_home }}/memories/{{ item.name }}"
+    owner: "{{ hermes_agent_user }}"
+    group: "{{ hermes_agent_user }}"
+    mode: "0600"
+    force: false
+  loop:
+    - name: MEMORY.md
+      content: |
+        # Persistent memory
+
+        This file is maintained by Hermes across conversations.
+    - name: USER.md
+      content: |
+        # User profile
+
+        The user owns the development environment and prefers natural-language, human-observable delegation through T3 Code.
+
+- name: Install the T3 CLI version matching the running server
+  become: true
+  become_user: "{{ hermes_agent_user }}"
+  community.general.npm:
+    name: t3
+    version: "{{ hermes_t3_version }}"
+    path: "{{ hermes_t3_bridge_dir }}"
+    state: present
+  environment:
+    HOME: "{{ hermes_agent_user_home }}"
+
+- name: Install smoke repository seed files
+  ansible.builtin.copy:
+    src: "smoke_repo/{{ item }}"
+    dest: "{{ hermes_t3_smoke_repo }}/{{ item }}"
+    owner: "{{ hermes_agent_user }}"
+    group: "{{ hermes_agent_user }}"
+    mode: "0644"
+  loop:
+    - README.md
+    - status.txt
+
+- name: Initialize safe T3 smoke repository
+  become: true
+  become_user: "{{ hermes_agent_user }}"
+  ansible.builtin.command:
+    argv:
+      - git
+      - init
+      - -b
+      - main
+      - "{{ hermes_t3_smoke_repo }}"
+    creates: "{{ hermes_t3_smoke_repo }}/.git"
+  register: hermes_smoke_git_init
+  environment:
+    HOME: "{{ hermes_agent_user_home }}"
+
+- name: Configure safe T3 smoke repository identity
+  become: true
+  become_user: "{{ hermes_agent_user }}"
+  ansible.builtin.command:
+    argv:
+      - git
+      - -C
+      - "{{ hermes_t3_smoke_repo }}"
+      - config
+      - "{{ item.key }}"
+      - "{{ item.value }}"
+  loop:
+    - key: user.name
+      value: Hermes T3 Smoke
+    - key: user.email
+      value: hermes-t3-smoke@localhost
+  when: hermes_smoke_git_init.changed
+  environment:
+    HOME: "{{ hermes_agent_user_home }}"
+
+- name: Stage safe T3 smoke repository baseline
+  become: true
+  become_user: "{{ hermes_agent_user }}"
+  ansible.builtin.command:
+    argv:
+      - git
+      - -C
+      - "{{ hermes_t3_smoke_repo }}"
+      - add
+      - README.md
+      - status.txt
+  when: hermes_smoke_git_init.changed
+  environment:
+    HOME: "{{ hermes_agent_user_home }}"
+
+- name: Commit safe T3 smoke repository baseline
+  become: true
+  become_user: "{{ hermes_agent_user }}"
+  ansible.builtin.command:
+    argv:
+      - git
+      - -C
+      - "{{ hermes_t3_smoke_repo }}"
+      - commit
+      - -m
+      - Initialize Hermes T3 smoke repository
+  when: hermes_smoke_git_init.changed
+  environment:
+    HOME: "{{ hermes_agent_user_home }}"
+
+- name: Register the safe smoke repository with T3
+  become: true
+  become_user: "{{ hermes_agent_user }}"
+  ansible.builtin.command:
+    argv:
+      - "{{ hermes_t3_cli }}"
+      - project
+      - add
+      - --base-dir
+      - "{{ hermes_t3_home }}"
+      - --title
+      - "{{ hermes_t3_smoke_project_title }}"
+      - "{{ hermes_t3_smoke_repo }}"
+  register: hermes_t3_project_add
+  changed_when: hermes_t3_project_add.rc == 0 and 'already' not in hermes_t3_project_add.stdout | lower
+  failed_when: >-
+    hermes_t3_project_add.rc != 0 and
+    'already' not in (hermes_t3_project_add.stdout + hermes_t3_project_add.stderr) | lower
+  environment:
+    HOME: "{{ hermes_agent_user_home }}"
+    T3CODE_HOME: "{{ hermes_t3_home }}"
+
+- name: Enable systemd lingering for the Hermes user
+  ansible.builtin.command:
+    argv:
+      - loginctl
+      - enable-linger
+      - "{{ hermes_agent_user }}"
+    creates: "/var/lib/systemd/linger/{{ hermes_agent_user }}"
+
+- name: Install the upstream Hermes user gateway service
+  become: true
+  become_user: "{{ hermes_agent_user }}"
+  ansible.builtin.command:
+    argv:
+      - "{{ hermes_agent_user_home }}/.local/bin/hermes"
+      - gateway
+      - install
+      - --force
+      - --no-start-now
+      - --start-on-login
+  changed_when: false
+  environment:
+    HOME: "{{ hermes_agent_user_home }}"
+    HERMES_HOME: "{{ hermes_agent_home }}"
+    PATH: "{{ hermes_agent_user_home }}/.local/bin:/usr/local/bin:/usr/bin:/bin"
+    XDG_RUNTIME_DIR: "/run/user/{{ hermes_agent_uid }}"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ hermes_agent_uid }}/bus"
+
+- name: Enable and start the Hermes user gateway
+  become: true
+  become_user: "{{ hermes_agent_user }}"
+  ansible.builtin.systemd_service:
+    name: hermes-gateway.service
+    scope: user
+    enabled: true
+    state: started
+    daemon_reload: true
+  environment:
+    HOME: "{{ hermes_agent_user_home }}"
+    HERMES_HOME: "{{ hermes_agent_home }}"
+    XDG_RUNTIME_DIR: "/run/user/{{ hermes_agent_uid }}"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ hermes_agent_uid }}/bus"

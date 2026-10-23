@@ -1,0 +1,17 @@
+{
+  "$schema": "https://paseo.sh/schemas/paseo.config.v1.json",
+  "version": 1,
+  "daemon": {
+    "listen": {{ remote_agent_dev_paseo_listen | to_json }},
+    "hostnames": {{ remote_agent_dev_paseo_hostnames | to_json }},
+    "cors": {
+      "allowedOrigins": {{ remote_agent_dev_paseo_cors_allowed_origins | to_json }}
+    },
+    "mcp": {
+      "enabled": true
+    },
+    "auth": {
+      "password": {{ remote_agent_dev_paseo_password_hash | to_json }}
+    }
+  }
+}

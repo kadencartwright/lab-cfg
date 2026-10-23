@@ -1,0 +1,650 @@
+---
+- name: Install RiffGraph system dependencies
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - build-essential
+      - cmake
+      - drumgizmo
+      - ffmpeg
+      - fluid-soundfont-gm
+      - fluidsynth
+      - libarchive-tools
+      - libsamplerate0-dev
+      - libsndfile1
+      - pkg-config
+      - unzip
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Disable the optional FluidSynth user daemon globally
+  ansible.builtin.systemd_service:
+    name: fluidsynth.service
+    enabled: false
+    scope: global
+  when: riffgraph_disable_fluidsynth_daemon
+
+- name: Install pinned RiffGraph LV2 runtime
+  ansible.builtin.apt:
+    name:
+      - "dragonfly-reverb-lv2={{ riffgraph_dragonfly_reverb_apt_version }}"
+      - "lv2file={{ riffgraph_lv2file_apt_version }}"
+    state: present
+    allow_downgrade: true
+
+- name: Inspect pinned RiffGraph LV2 runtime files
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+    checksum_algorithm: sha256
+  loop:
+    - name: Dragonfly Plate DSP
+      path: "{{ riffgraph_dragonfly_plate_system_plugin }}"
+      sha256: "{{ riffgraph_dragonfly_plate_plugin_sha256 }}"
+    - name: lv2file host
+      path: "{{ riffgraph_lv2file_binary }}"
+      sha256: "{{ riffgraph_lv2file_sha256 }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: riffgraph_lv2_runtime_files
+
+- name: Authenticate pinned RiffGraph LV2 runtime files
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists | default(false)
+      - item.stat.isreg | default(false)
+      - item.stat.checksum == item.item.sha256
+    fail_msg: >-
+      {{ item.item.name }} at {{ item.item.path }} does not match the
+      checksum-pinned RiffGraph runtime.
+  loop: "{{ riffgraph_lv2_runtime_files.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+
+- name: Create RiffGraph directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default(riffgraph_user) }}"
+    group: "{{ item.group | default(riffgraph_group) }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ riffgraph_root }}"
+      mode: "0755"
+      owner: root
+      group: root
+    - path: "{{ riffgraph_releases_dir }}"
+      mode: "0755"
+      owner: root
+      group: root
+    - path: "{{ riffgraph_venv_dir }}"
+      mode: "0755"
+      owner: root
+      group: root
+    - path: "{{ riffgraph_cache_dir }}"
+      mode: "0755"
+    - path: "{{ riffgraph_uv_cache_dir }}"
+      mode: "0755"
+    - path: "{{ riffgraph_python_dir }}"
+      mode: "0755"
+      owner: root
+      group: root
+    - path: "{{ riffgraph_python_uv_cache_dir }}"
+      mode: "0755"
+      owner: root
+      group: root
+    - path: "{{ riffgraph_project_dir }}"
+      mode: "0755"
+    - path: "{{ riffgraph_hf_home }}"
+      mode: "0700"
+    - path: "{{ riffgraph_managed_lv2_root }}"
+      mode: "0755"
+      owner: root
+      group: root
+
+- name: Link authenticated Dragonfly Plate into the managed LV2 root
+  ansible.builtin.file:
+    src: "{{ riffgraph_dragonfly_plate_system_bundle }}"
+    dest: "{{ riffgraph_dragonfly_plate_bundle }}"
+    state: link
+    owner: root
+    group: root
+    force: true
+    follow: false
+
+- name: Install RiffGraph specialized open instruments
+  ansible.builtin.include_tasks: open_instruments.yml
+
+- name: Create pinned uv install directory
+  ansible.builtin.file:
+    path: "{{ riffgraph_uv_install_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download pinned uv archive
+  ansible.builtin.get_url:
+    url: "{{ riffgraph_uv_url }}"
+    dest: "/var/cache/{{ riffgraph_uv_archive }}"
+    checksum: "sha256:{{ riffgraph_uv_sha256 }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Extract pinned uv archive
+  ansible.builtin.unarchive:
+    src: "/var/cache/{{ riffgraph_uv_archive }}"
+    dest: "{{ riffgraph_uv_install_dir }}"
+    remote_src: true
+    creates: "{{ riffgraph_uv_install_dir }}/uv-x86_64-unknown-linux-gnu/uv"
+
+- name: Inspect local RiffGraph source
+  ansible.builtin.stat:
+    path: "{{ riffgraph_local_source }}"
+  delegate_to: localhost
+  become: false
+  register: riffgraph_local_source_stat
+
+- name: Require local RiffGraph source
+  ansible.builtin.assert:
+    that:
+      - riffgraph_local_source_stat.stat.exists | default(false)
+      - riffgraph_local_source_stat.stat.isdir | default(false)
+    fail_msg: "RiffGraph source is missing at {{ riffgraph_local_source }}"
+
+- name: Inspect controller Hugging Face token
+  ansible.builtin.stat:
+    path: "{{ riffgraph_hf_token_source }}"
+  delegate_to: localhost
+  become: false
+  register: riffgraph_hf_token_stat
+
+- name: Require controller Hugging Face token
+  ansible.builtin.assert:
+    that:
+      - riffgraph_hf_token_stat.stat.exists | default(false)
+      - riffgraph_hf_token_stat.stat.isreg | default(false)
+      - riffgraph_hf_token_stat.stat.size | default(0) | int > 0
+    fail_msg: >-
+      Authenticate locally with Hugging Face before deploying MuScriptor.
+
+- name: Install Hugging Face token for the RiffGraph worker
+  ansible.builtin.copy:
+    src: "{{ riffgraph_hf_token_source }}"
+    dest: "{{ riffgraph_hf_home }}/token"
+    owner: "{{ riffgraph_user }}"
+    group: "{{ riffgraph_group }}"
+    mode: "0600"
+  no_log: true
+
+- name: Install pinned managed Python runtime
+  ansible.builtin.command:
+    argv:
+      - "{{ riffgraph_uv_binary }}"
+      - python
+      - install
+      - --install-dir
+      - "{{ riffgraph_python_dir }}"
+      - --cache-dir
+      - "{{ riffgraph_python_uv_cache_dir }}"
+      - --no-bin
+      - "{{ riffgraph_python_version }}"
+  register: riffgraph_python_install
+  changed_when: >-
+    'Installed Python' in
+    (riffgraph_python_install.stdout + riffgraph_python_install.stderr)
+
+- name: Inspect pinned managed Python runtime
+  ansible.builtin.stat:
+    path: "{{ riffgraph_python_executable }}"
+  register: riffgraph_python_runtime
+
+- name: Require pinned managed Python runtime
+  ansible.builtin.assert:
+    that:
+      - riffgraph_python_runtime.stat.exists | default(false)
+      - riffgraph_python_runtime.stat.isreg | default(false)
+      - riffgraph_python_runtime.stat.executable | default(false)
+    fail_msg: "Pinned Python {{ riffgraph_python_version }} was not installed correctly."
+  when:
+    - not ansible_check_mode or riffgraph_python_runtime.stat.exists | default(false)
+
+- name: Freeze pinned managed Python runtime
+  ansible.builtin.script:
+    cmd: >-
+      {{ role_path }}/files/riffgraph_freeze_tree.py
+      {{ riffgraph_python_dir | quote }}
+      {{ '--check' if ansible_check_mode else '' }}
+    executable: python3
+  check_mode: false
+  register: riffgraph_python_freeze
+  changed_when: (riffgraph_python_freeze.stdout | from_json).changed
+  when: riffgraph_python_runtime.stat.exists | default(false)
+
+- name: Build deterministic RiffGraph source bundle
+  ansible.builtin.command:
+    argv:
+      - python3
+      - "{{ role_path }}/files/riffgraph_source_bundle.py"
+      - "{{ riffgraph_local_source }}"
+  delegate_to: localhost
+  become: false
+  check_mode: false
+  changed_when: false
+  register: riffgraph_source_bundle_result
+
+- name: Parse RiffGraph source bundle metadata
+  ansible.builtin.set_fact:
+    riffgraph_source_bundle: "{{ riffgraph_source_bundle_result.stdout | from_json }}"
+
+- name: Validate RiffGraph source bundle metadata
+  ansible.builtin.assert:
+    that:
+      - riffgraph_source_bundle.path is string
+      - riffgraph_source_bundle.sha256 is match('^[0-9a-f]{64}$')
+      - riffgraph_source_bundle.manifest_sha256 is match('^[0-9a-f]{64}$')
+      - riffgraph_source_bundle.muscriptor_requirements_sha256 is match('^[0-9a-f]{64}$')
+    fail_msg: "Could not create a deterministic RiffGraph source bundle."
+
+- name: Select content-addressed RiffGraph release and worker
+  ansible.builtin.set_fact:
+    riffgraph_release_path: >-
+      {{ riffgraph_releases_dir }}/v2-py{{ riffgraph_python_version }}-{{ riffgraph_source_bundle.sha256 }}
+    riffgraph_release_app_dir: >-
+      {{ riffgraph_releases_dir }}/v2-py{{ riffgraph_python_version }}-{{ riffgraph_source_bundle.sha256 }}/app
+    riffgraph_release_core_venv: >-
+      {{ riffgraph_releases_dir }}/v2-py{{ riffgraph_python_version }}-{{ riffgraph_source_bundle.sha256 }}/venv
+    riffgraph_muscriptor_venv: >-
+      {{
+        riffgraph_venv_dir
+        ~ '/muscriptor-py'
+        ~ riffgraph_python_version
+        ~ '-'
+        ~ riffgraph_source_bundle.muscriptor_requirements_sha256
+      }}
+
+- name: Inspect immutable RiffGraph release
+  ansible.builtin.stat:
+    path: "{{ riffgraph_release_path }}/.validated"
+  register: riffgraph_release_marker
+
+- name: Build a new immutable RiffGraph release
+  when:
+    - not riffgraph_release_marker.stat.exists
+    - not ansible_check_mode
+  block:
+    - name: Remove an incomplete release with the selected digest
+      ansible.builtin.file:
+        path: "{{ riffgraph_release_path }}"
+        state: absent
+
+    - name: Create the release application directory
+      ansible.builtin.file:
+        path: "{{ riffgraph_release_app_dir }}"
+        state: directory
+        owner: "{{ riffgraph_user }}"
+        group: "{{ riffgraph_group }}"
+        mode: "0755"
+
+    - name: Transfer the immutable source bundle
+      ansible.builtin.copy:
+        src: "{{ riffgraph_source_bundle.path }}"
+        dest: "{{ riffgraph_release_path }}/source.tar"
+        owner: root
+        group: root
+        mode: "0444"
+
+- name: Inspect deployed source bundle
+  ansible.builtin.stat:
+    path: "{{ riffgraph_release_path }}/source.tar"
+    checksum_algorithm: sha256
+  register: riffgraph_deployed_bundle
+  when:
+    - riffgraph_release_marker.stat.exists or not ansible_check_mode
+
+- name: Verify deployed source bundle identity
+  ansible.builtin.assert:
+    that:
+      - riffgraph_deployed_bundle.stat.exists | default(false)
+      - riffgraph_deployed_bundle.stat.checksum == riffgraph_source_bundle.sha256
+    fail_msg: "The deployed RiffGraph source bundle failed authentication."
+  when:
+    - riffgraph_release_marker.stat.exists or not ansible_check_mode
+
+- name: Extract the authenticated source bundle
+  ansible.builtin.unarchive:
+    src: "{{ riffgraph_release_path }}/source.tar"
+    dest: "{{ riffgraph_release_app_dir }}"
+    remote_src: true
+    owner: "{{ riffgraph_user }}"
+    group: "{{ riffgraph_group }}"
+  when:
+    - not riffgraph_release_marker.stat.exists
+    - not ansible_check_mode
+
+- name: Verify exact extracted source bytes
+  ansible.builtin.script:
+    cmd: >-
+      {{ role_path }}/files/riffgraph_verify_source.py
+      {{ riffgraph_release_app_dir | quote }}
+      {{ riffgraph_source_bundle.manifest_sha256 | quote }}
+    executable: python3
+  check_mode: false
+  changed_when: false
+  when:
+    - riffgraph_release_marker.stat.exists or not ansible_check_mode
+
+- name: Install locked RiffGraph core environment in the release
+  ansible.builtin.command:
+    argv:
+      - "{{ riffgraph_uv_binary }}"
+      - sync
+      - --locked
+      - --no-dev
+      - --python
+      - "{{ riffgraph_python_executable }}"
+  args:
+    chdir: "{{ riffgraph_release_app_dir }}"
+  environment:
+    UV_CACHE_DIR: "{{ riffgraph_uv_cache_dir }}"
+    UV_PROJECT_ENVIRONMENT: "{{ riffgraph_release_core_venv }}"
+  become_user: "{{ riffgraph_user }}"
+  register: riffgraph_core_sync
+  changed_when: >-
+    'Installed' in (riffgraph_core_sync.stdout + riffgraph_core_sync.stderr)
+    or 'Built' in (riffgraph_core_sync.stdout + riffgraph_core_sync.stderr)
+    or 'Uninstalled' in (riffgraph_core_sync.stdout + riffgraph_core_sync.stderr)
+  when:
+    - not riffgraph_release_marker.stat.exists
+    - not ansible_check_mode
+
+- name: Inspect immutable MuScriptor worker
+  ansible.builtin.stat:
+    path: "{{ riffgraph_muscriptor_venv }}/.validated"
+  register: riffgraph_muscriptor_marker
+
+- name: Build a content-addressed MuScriptor worker
+  when:
+    - not riffgraph_muscriptor_marker.stat.exists
+    - not ansible_check_mode
+  block:
+    - name: Remove an incomplete MuScriptor worker
+      ansible.builtin.file:
+        path: "{{ riffgraph_muscriptor_venv }}"
+        state: absent
+
+    - name: Create MuScriptor worker directory
+      ansible.builtin.file:
+        path: "{{ riffgraph_muscriptor_venv }}"
+        state: directory
+        owner: "{{ riffgraph_user }}"
+        group: "{{ riffgraph_group }}"
+        mode: "0755"
+
+    - name: Create isolated MuScriptor environment
+      ansible.builtin.command:
+        argv:
+          - "{{ riffgraph_uv_binary }}"
+          - venv
+          - --python
+          - "{{ riffgraph_python_executable }}"
+          - "{{ riffgraph_muscriptor_venv }}"
+      environment:
+        UV_CACHE_DIR: "{{ riffgraph_uv_cache_dir }}"
+      become_user: "{{ riffgraph_user }}"
+
+    - name: Install pinned CPU-only MuScriptor worker
+      ansible.builtin.command:
+        argv:
+          - "{{ riffgraph_uv_binary }}"
+          - pip
+          - sync
+          - --python
+          - "{{ riffgraph_muscriptor_venv }}/bin/python"
+          - --torch-backend
+          - cpu
+          - "{{ riffgraph_release_app_dir }}/requirements/muscriptor.txt"
+      environment:
+        UV_CACHE_DIR: "{{ riffgraph_uv_cache_dir }}"
+      become_user: "{{ riffgraph_user }}"
+      register: riffgraph_muscriptor_install
+      changed_when: >-
+        'Installed' in
+        (riffgraph_muscriptor_install.stdout + riffgraph_muscriptor_install.stderr)
+        or 'Uninstalled' in
+        (riffgraph_muscriptor_install.stdout + riffgraph_muscriptor_install.stderr)
+
+- name: Inspect installed MuScriptor environment
+  ansible.builtin.stat:
+    path: "{{ riffgraph_muscriptor_venv }}/bin/python"
+  register: riffgraph_muscriptor_python_stat
+
+- name: Read installed MuScriptor version
+  ansible.builtin.command:
+    argv:
+      - "{{ riffgraph_muscriptor_venv }}/bin/python"
+      - -c
+      - >-
+        import importlib.metadata;
+        print(importlib.metadata.version("muscriptor"))
+  become_user: "{{ riffgraph_user }}"
+  check_mode: false
+  changed_when: false
+  register: riffgraph_muscriptor_actual_version
+  when: riffgraph_muscriptor_python_stat.stat.exists
+
+- name: Verify installed MuScriptor version
+  ansible.builtin.assert:
+    that:
+      - riffgraph_muscriptor_actual_version.stdout == riffgraph_muscriptor_version
+    fail_msg: >-
+      Expected MuScriptor {{ riffgraph_muscriptor_version }}, found
+      {{ riffgraph_muscriptor_actual_version.stdout }}.
+  when: riffgraph_muscriptor_python_stat.stat.exists
+
+- name: Freeze the immutable MuScriptor worker
+  ansible.builtin.command:
+    argv:
+      - chown
+      - -hR
+      - root:root
+      - "{{ riffgraph_muscriptor_venv }}"
+  when:
+    - not riffgraph_muscriptor_marker.stat.exists
+    - not ansible_check_mode
+  changed_when: true
+
+- name: Mark the immutable MuScriptor worker
+  ansible.builtin.copy:
+    content: |
+      requirements_sha256={{ riffgraph_source_bundle.muscriptor_requirements_sha256 }}
+      python={{ riffgraph_python_version }}
+      muscriptor={{ riffgraph_muscriptor_version }}
+    dest: "{{ riffgraph_muscriptor_venv }}/.validated"
+    owner: root
+    group: root
+    mode: "0444"
+  when:
+    - not riffgraph_muscriptor_marker.stat.exists
+    - not ansible_check_mode
+
+- name: Couple the release to its MuScriptor worker
+  ansible.builtin.file:
+    src: "{{ riffgraph_muscriptor_venv }}"
+    dest: "{{ riffgraph_release_path }}/worker"
+    state: link
+    force: true
+  when:
+    - not riffgraph_release_marker.stat.exists
+    - not ansible_check_mode
+
+- name: Record the release MuScriptor version
+  ansible.builtin.copy:
+    content: "{{ riffgraph_muscriptor_version }}\n"
+    dest: "{{ riffgraph_release_path }}/worker-version"
+    owner: root
+    group: root
+    mode: "0444"
+  when:
+    - not riffgraph_release_marker.stat.exists
+    - not ansible_check_mode
+
+- name: Verify the candidate RiffGraph release
+  ansible.builtin.command:
+    argv:
+      - "{{ riffgraph_release_core_venv }}/bin/riffgraph"
+      - doctor
+      - --json
+  environment:
+    HF_HOME: "{{ riffgraph_hf_home }}"
+    PYTHONDONTWRITEBYTECODE: "1"
+    RIFFGRAPH_MUSCRIPTOR: "{{ riffgraph_release_path }}/worker/bin/muscriptor"
+    RIFFGRAPH_MUSCRIPTOR_VERSION: "{{ riffgraph_muscriptor_version }}"
+    RIFFGRAPH_SOUNDFONT: "{{ riffgraph_soundfont }}"
+    RIFFGRAPH_SFIZZ_RENDER: "{{ riffgraph_sfizz_binary }}"
+    RIFFGRAPH_DRUMGIZMO: /usr/bin/drumgizmo
+    RIFFGRAPH_FFMPEG: /usr/bin/ffmpeg
+    RIFFGRAPH_NAM_RENDER: "{{ riffgraph_nam_render_binary }}"
+    RIFFGRAPH_LV2FILE: "{{ riffgraph_lv2file_binary }}"
+    LV2_PATH: "{{ riffgraph_managed_lv2_root }}"
+    RIFFGRAPH_JAZZ_GUITAR_SFZ: "{{ riffgraph_jazz_guitar_sfz_source }}"
+    RIFFGRAPH_JAZZ_GUITAR_NAM_MODEL: "{{ riffgraph_jazz_guitar_nam_model }}"
+    RIFFGRAPH_DISTORTED_GUITAR_SFZ: "{{ riffgraph_distorted_guitar_sfz_source }}"
+    RIFFGRAPH_FINGER_BASS_SFZ: "{{ riffgraph_finger_bass_sfz_source }}"
+    RIFFGRAPH_BASS_NAM_MODEL: "{{ riffgraph_bass_nam_model }}"
+    RIFFGRAPH_PAD_SFZ: "{{ riffgraph_pad_sfz_source }}"
+    RIFFGRAPH_DRUMKIT: "{{ riffgraph_drumkit_source }}"
+    RIFFGRAPH_DRUM_MIDIMAP: "{{ riffgraph_drum_midimap }}"
+    RIFFGRAPH_DRAGONFLY_PLATE_PLUGIN: "{{ riffgraph_dragonfly_plate_plugin }}"
+  become_user: "{{ riffgraph_user }}"
+  check_mode: false
+  changed_when: false
+  register: riffgraph_candidate_doctor
+  when:
+    - riffgraph_release_marker.stat.exists or not ansible_check_mode
+
+- name: Find runtime bytecode in the release source
+  ansible.builtin.find:
+    paths: "{{ riffgraph_release_app_dir }}"
+    file_type: directory
+    patterns: __pycache__
+    recurse: true
+  register: riffgraph_release_pycache
+  when:
+    - not riffgraph_release_marker.stat.exists
+    - not ansible_check_mode
+
+- name: Remove runtime bytecode from the release source
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ riffgraph_release_pycache.files | default([]) }}"
+  when:
+    - not riffgraph_release_marker.stat.exists
+    - not ansible_check_mode
+
+- name: Freeze the immutable RiffGraph release
+  ansible.builtin.command:
+    argv:
+      - chown
+      - -hR
+      - root:root
+      - "{{ riffgraph_release_path }}"
+  when:
+    - not riffgraph_release_marker.stat.exists
+    - not ansible_check_mode
+  changed_when: true
+
+- name: Mark the verified RiffGraph release
+  ansible.builtin.copy:
+    content: |
+      source_bundle_sha256={{ riffgraph_source_bundle.sha256 }}
+      source_manifest_sha256={{ riffgraph_source_bundle.manifest_sha256 }}
+      worker_requirements_sha256={{ riffgraph_source_bundle.muscriptor_requirements_sha256 }}
+      python={{ riffgraph_python_version }}
+    dest: "{{ riffgraph_release_path }}/.validated"
+    owner: root
+    group: root
+    mode: "0444"
+  when:
+    - not riffgraph_release_marker.stat.exists
+    - not ansible_check_mode
+
+- name: Promote the verified RiffGraph release
+  ansible.builtin.file:
+    src: "{{ riffgraph_release_path }}"
+    dest: "{{ riffgraph_current_link }}"
+    state: link
+    owner: root
+    group: root
+    force: true
+    follow: false
+  when:
+    - riffgraph_release_marker.stat.exists or not ansible_check_mode
+
+- name: Protect the promoted RiffGraph release root
+  ansible.builtin.file:
+    path: "{{ riffgraph_release_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when:
+    - riffgraph_release_marker.stat.exists or not ansible_check_mode
+
+- name: Inspect RiffGraph release directories
+  ansible.builtin.find:
+    paths: "{{ riffgraph_releases_dir }}"
+    file_type: directory
+    recurse: false
+  register: riffgraph_release_directories
+
+- name: Inspect retained release source bundles
+  ansible.builtin.stat:
+    path: "{{ item.path }}/source.tar"
+  loop: "{{ riffgraph_release_directories.files }}"
+  register: riffgraph_retained_release_bundles
+
+- name: Remove legacy releases without authenticated source bundles
+  ansible.builtin.file:
+    path: "{{ item.item.path }}"
+    state: absent
+  loop: "{{ riffgraph_retained_release_bundles.results }}"
+  when:
+    - not ansible_check_mode
+    - not item.stat.exists
+    - item.item.path != riffgraph_release_path
+
+- name: Install RiffGraph command wrapper
+  ansible.builtin.template:
+    src: riffgraph.sh.j2
+    dest: "{{ riffgraph_command }}"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Remove legacy mutable RiffGraph installations
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ riffgraph_root }}/app"
+    - "{{ riffgraph_venv_dir }}/core"
+    - "{{ riffgraph_venv_dir }}/muscriptor"
+    - "{{ riffgraph_legacy_muscriptor_venv }}"
+  when: not ansible_check_mode
+
+- name: Verify RiffGraph core and MuScriptor worker
+  ansible.builtin.command:
+    argv:
+      - "{{ riffgraph_command }}"
+      - doctor
+      - --json
+  become_user: "{{ riffgraph_user }}"
+  changed_when: false
+  register: riffgraph_doctor
+
+- name: Show RiffGraph capability report
+  ansible.builtin.debug:
+    var: riffgraph_doctor.stdout

@@ -1,0 +1,157 @@
+---
+- name: Require a supported Fast Node Manager architecture
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.architecture in fast_node_manager_release_assets
+      - fast_node_manager_default_node_version in fast_node_manager_node_versions
+    fail_msg: >-
+      Fast Node Manager must support architecture {{ ansible_facts.architecture }}
+      and its default Node version must be included in the managed versions.
+
+- name: Select Fast Node Manager release asset
+  ansible.builtin.set_fact:
+    fast_node_manager_release_asset: >-
+      {{ fast_node_manager_release_assets[ansible_facts.architecture] }}
+
+- name: Install Fast Node Manager archive dependency
+  ansible.builtin.apt:
+    name: unzip
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create Fast Node Manager directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ fast_node_manager_user }}"
+    group: "{{ fast_node_manager_user }}"
+    mode: "0755"
+  loop:
+    - "{{ fast_node_manager_cache_dir }}"
+    - "{{ fast_node_manager_install_dir }}"
+    - "{{ fast_node_manager_install_dir }}/releases/v{{ fast_node_manager_version }}"
+
+- name: Download checksum-pinned Fast Node Manager release
+  ansible.builtin.get_url:
+    url: >-
+      https://github.com/Schniz/fnm/releases/download/v{{ fast_node_manager_version }}/{{ fast_node_manager_release_asset.filename }}
+    dest: >-
+      {{ fast_node_manager_cache_dir }}/fnm-v{{ fast_node_manager_version }}-{{ ansible_facts.architecture }}.zip
+    checksum: "sha256:{{ fast_node_manager_release_asset.sha256 }}"
+    owner: "{{ fast_node_manager_user }}"
+    group: "{{ fast_node_manager_user }}"
+    mode: "0644"
+    timeout: 120
+
+- name: Extract Fast Node Manager release
+  ansible.builtin.unarchive:
+    src: >-
+      {{ fast_node_manager_cache_dir }}/fnm-v{{ fast_node_manager_version }}-{{ ansible_facts.architecture }}.zip
+    dest: "{{ fast_node_manager_install_dir }}/releases/v{{ fast_node_manager_version }}"
+    remote_src: true
+    owner: "{{ fast_node_manager_user }}"
+    group: "{{ fast_node_manager_user }}"
+    creates: "{{ fast_node_manager_install_dir }}/releases/v{{ fast_node_manager_version }}/fnm"
+
+- name: Ensure Fast Node Manager binary is executable
+  ansible.builtin.file:
+    path: "{{ fast_node_manager_install_dir }}/releases/v{{ fast_node_manager_version }}/fnm"
+    state: file
+    owner: "{{ fast_node_manager_user }}"
+    group: "{{ fast_node_manager_user }}"
+    mode: "0755"
+
+- name: Activate configured Fast Node Manager release
+  ansible.builtin.file:
+    src: "{{ fast_node_manager_install_dir }}/releases/v{{ fast_node_manager_version }}/fnm"
+    dest: "{{ fast_node_manager_install_dir }}/fnm"
+    state: link
+    owner: "{{ fast_node_manager_user }}"
+    group: "{{ fast_node_manager_user }}"
+    force: true
+
+- name: Configure Fast Node Manager for interactive shells
+  ansible.builtin.blockinfile:
+    path: "{{ fast_node_manager_shell_config_path }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK: Fast Node Manager"
+    block: |
+      export PATH="{{ fast_node_manager_install_dir }}:$PATH"
+      eval "$(fnm env --use-on-cd --shell {{ fast_node_manager_shell }})"
+    owner: "{{ fast_node_manager_user }}"
+    group: "{{ fast_node_manager_user }}"
+    mode: "0644"
+
+- name: Inspect Fast Node Manager Node installations
+  ansible.builtin.stat:
+    path: >-
+      {{ fast_node_manager_install_dir }}/node-versions/v{{ item }}/installation/bin/node
+  loop: "{{ fast_node_manager_node_versions }}"
+  register: fast_node_manager_installed_nodes
+
+- name: Install configured Node versions with Fast Node Manager
+  become: true
+  become_user: "{{ fast_node_manager_user }}"
+  ansible.builtin.command:
+    argv:
+      - "{{ fast_node_manager_install_dir }}/fnm"
+      - install
+      - "{{ item.item }}"
+  loop: "{{ fast_node_manager_installed_nodes.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: not item.stat.exists
+  environment:
+    FNM_DIR: "{{ fast_node_manager_install_dir }}"
+    HOME: "{{ fast_node_manager_user_home }}"
+    PATH: "{{ fast_node_manager_install_dir }}:/usr/local/bin:/usr/bin:/bin"
+
+- name: Inspect default Fast Node Manager Node version
+  become: true
+  become_user: "{{ fast_node_manager_user }}"
+  ansible.builtin.command:
+    argv:
+      - "{{ fast_node_manager_install_dir }}/fnm"
+      - default
+  register: fast_node_manager_current_default
+  changed_when: false
+  failed_when: false
+  environment:
+    FNM_DIR: "{{ fast_node_manager_install_dir }}"
+    HOME: "{{ fast_node_manager_user_home }}"
+
+- name: Set default Fast Node Manager Node version
+  become: true
+  become_user: "{{ fast_node_manager_user }}"
+  ansible.builtin.command:
+    argv:
+      - "{{ fast_node_manager_install_dir }}/fnm"
+      - default
+      - "{{ fast_node_manager_default_node_version }}"
+  when: >-
+    fast_node_manager_current_default.rc != 0 or
+    fast_node_manager_current_default.stdout | trim not in
+    [fast_node_manager_default_node_version, 'v' ~ fast_node_manager_default_node_version]
+  environment:
+    FNM_DIR: "{{ fast_node_manager_install_dir }}"
+    HOME: "{{ fast_node_manager_user_home }}"
+
+- name: Verify default Fast Node Manager Node version
+  become: true
+  become_user: "{{ fast_node_manager_user }}"
+  ansible.builtin.command:
+    argv:
+      - "{{ fast_node_manager_install_dir }}/fnm"
+      - exec
+      - --using=default
+      - node
+      - --version
+  register: fast_node_manager_node_version
+  changed_when: false
+  environment:
+    FNM_DIR: "{{ fast_node_manager_install_dir }}"
+    HOME: "{{ fast_node_manager_user_home }}"
+
+- name: Show default Fast Node Manager Node version
+  ansible.builtin.debug:
+    msg: "Fast Node Manager default is {{ fast_node_manager_node_version.stdout }}"

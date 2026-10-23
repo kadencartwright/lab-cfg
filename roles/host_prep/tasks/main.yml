@@ -12,10 +12,12 @@
 
 - name: Install host packages
   ansible.builtin.apt:
-    name: "{{ host_prep_base_packages }}"
+    name: "{{ host_prep_base_packages + host_prep_extra_packages }}"
     state: present
     update_cache: true
     cache_valid_time: 3600
+  tags:
+    - host_packages
 
 - name: Ensure configured kernel command-line args are present
   ansible.builtin.shell:
@@ -139,6 +141,74 @@
     state: absent
   loop: "{{ host_prep_remove_bashrc_lines }}"
   when: host_prep_remove_bashrc_lines | length > 0
+
+- name: Create network wait-online override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/systemd-networkd-wait-online.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: host_prep_network_wait_online_any
+
+- name: Wait for any routable interface instead of unused Ethernet ports
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/systemd-networkd-wait-online.service.d/99-homelab.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Service]
+      ExecStart=
+      ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --any --dns --operational-state=routable
+  when: host_prep_network_wait_online_any
+  notify: Reload systemd
+
+- name: Inspect retired K3s backup timer
+  ansible.builtin.stat:
+    path: /etc/systemd/system/borg-k3s-etcd-backup.timer
+  register: host_prep_k3s_backup_timer
+  when: host_prep_retire_k3s_backup
+
+- name: Disable retired K3s backup timer
+  ansible.builtin.systemd_service:
+    name: borg-k3s-etcd-backup.timer
+    enabled: false
+    state: stopped
+  when:
+    - host_prep_retire_k3s_backup
+    - host_prep_k3s_backup_timer.stat.exists | default(false)
+
+- name: Inspect retired K3s backup service
+  ansible.builtin.stat:
+    path: /etc/systemd/system/borg-k3s-etcd-backup.service
+  register: host_prep_k3s_backup_service
+  when: host_prep_retire_k3s_backup
+
+- name: Inspect retired K3s backup failure state
+  ansible.builtin.command:
+    argv:
+      - systemctl
+      - is-failed
+      - borg-k3s-etcd-backup.service
+  register: host_prep_k3s_backup_failed
+  changed_when: false
+  failed_when: false
+  when:
+    - host_prep_retire_k3s_backup
+    - host_prep_k3s_backup_service.stat.exists | default(false)
+
+- name: Clear retired K3s backup failure state
+  ansible.builtin.command:
+    argv:
+      - systemctl
+      - reset-failed
+      - borg-k3s-etcd-backup.service
+  changed_when: false
+  when:
+    - host_prep_retire_k3s_backup
+    - host_prep_k3s_backup_service.stat.exists | default(false)
+    - host_prep_k3s_backup_failed.rc == 0
 
 - name: Disable sleep targets
   ansible.builtin.systemd:

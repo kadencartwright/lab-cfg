@@ -7,7 +7,7 @@ BORG_ANSIBLE_USER ?= lab
 HOST_METRICS_ANSIBLE_USER ?= lab
 TAILSCALE_ANSIBLE_USER ?= lab
 
-.PHONY: collections ping sudo-check check prep site upgrade borg-backup systemd-exporter remote-agent-dev openai-codex-cli tts-pipeline tailscale-host-authkey tailscale-hosts tailnet-kubeconfig secrets-scan tailscale-secret ghcr-pull-secret baby-monitor-secret
+.PHONY: collections ping sudo-check check prep site upgrade borg-backup systemd-exporter remote-agent-dev openai-codex-cli chatgpt-desktop hermes-agent virtualization tts-pipeline riffgraph tailscale-host-authkey tailscale-hosts tailnet-kubeconfig secrets-scan tailscale-secret ghcr-pull-secret baby-monitor-secret
 
 collections:
 	$(ANSIBLE_GALAXY) collection install -r requirements.yml -p .ansible/collections
@@ -40,10 +40,26 @@ remote-agent-dev:
 	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/remote-agent-dev.yml
 
 openai-codex-cli:
-	$(MAKE) remote-agent-dev
+	$(ANSIBLE_PLAYBOOK) -i $(INVENTORY) playbooks/openai-codex-cli.yml
+
+.PHONY: claude-code
+claude-code:
+	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/claude-code.yml
+
+chatgpt-desktop:
+	$(ANSIBLE_PLAYBOOK) -i $(INVENTORY) playbooks/chatgpt-desktop.yml
+
+hermes-agent:
+	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/hermes-agent.yml
+
+virtualization:
+	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/virtualization.yml
 
 tts-pipeline:
 	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/tts-pipeline.yml
+
+riffgraph:
+	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/riffgraph.yml
 
 tailscale-host-authkey:
 	scripts/create-tailscale-host-authkey
@@ -65,3 +81,11 @@ ghcr-pull-secret:
 
 baby-monitor-secret:
 	scripts/create-baby-monitor-secret
+
+.PHONY: agent-tools
+agent-tools:
+	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/agent-tools.yml
+
+.PHONY: opencode
+opencode:
+	$(ANSIBLE_PLAYBOOK) $(VAULT_ARGS) -i $(INVENTORY) playbooks/opencode.yml

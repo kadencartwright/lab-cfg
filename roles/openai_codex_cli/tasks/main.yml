@@ -6,18 +6,90 @@
     update_cache: true
     cache_valid_time: 3600
 
-- name: Install Codex CLI from npm
-  community.general.npm:
-    name: "{{ openai_codex_cli_npm_package }}"
-    global: true
-    state: "{{ openai_codex_cli_npm_state }}"
-    version: "{{ openai_codex_cli_npm_version | default(omit, true) }}"
+- name: Install the official Codex CLI installer
+  ansible.builtin.get_url:
+    url: "{{ openai_codex_cli_installer_url }}"
+    dest: "{{ openai_codex_cli_installer_path }}"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Check the installed Codex CLI version
+  become: true
+  become_user: "{{ openai_codex_cli_user }}"
+  ansible.builtin.command: "{{ openai_codex_cli_binary_path }} --version"
+  changed_when: false
+  failed_when: false
+  register: openai_codex_cli_existing_version
+  environment:
+    HOME: "{{ openai_codex_cli_user_home }}"
+
+- name: Check whether Codex CLI is from the legacy npm installation
+  ansible.builtin.command:
+    argv:
+      - readlink
+      - "{{ openai_codex_cli_binary_path }}"
+  changed_when: false
+  failed_when: false
+  register: openai_codex_cli_existing_link
+
+- name: Install the pinned standalone Codex CLI release
+  become: true
+  become_user: "{{ openai_codex_cli_user }}"
+  ansible.builtin.command:
+    argv:
+      - "{{ openai_codex_cli_installer_path }}"
+      - --release
+      - "{{ openai_codex_cli_version }}"
+  environment:
+    CODEX_INSTALL_DIR: "{{ openai_codex_cli_install_dir }}"
+    CODEX_NON_INTERACTIVE: "true"
+    HOME: "{{ openai_codex_cli_user_home }}"
+  when: >-
+    openai_codex_cli_existing_version.rc != 0 or
+    openai_codex_cli_existing_version.stdout != 'codex-cli ' + openai_codex_cli_version or
+    'node_modules/' + openai_codex_cli_legacy_npm_package in openai_codex_cli_existing_link.stdout
+
+- name: Remove the legacy npm-managed Codex CLI package
+  become: true
+  become_user: "{{ openai_codex_cli_user }}"
+  ansible.builtin.command:
+    argv:
+      - npm
+      - uninstall
+      - --global
+      - "{{ openai_codex_cli_legacy_npm_package }}"
+  environment:
+    HOME: "{{ openai_codex_cli_user_home }}"
+  when: >-
+    'node_modules/' + openai_codex_cli_legacy_npm_package in
+    openai_codex_cli_existing_link.stdout
+
+- name: Restore the standalone Codex CLI link after npm migration
+  become: true
+  become_user: "{{ openai_codex_cli_user }}"
+  ansible.builtin.command:
+    argv:
+      - "{{ openai_codex_cli_installer_path }}"
+      - --release
+      - "{{ openai_codex_cli_version }}"
+  environment:
+    CODEX_INSTALL_DIR: "{{ openai_codex_cli_install_dir }}"
+    CODEX_NON_INTERACTIVE: "true"
+    HOME: "{{ openai_codex_cli_user_home }}"
+  when: >-
+    'node_modules/' + openai_codex_cli_legacy_npm_package in
+    openai_codex_cli_existing_link.stdout
 
 - name: Verify Codex CLI is available
-  ansible.builtin.command: codex --version
+  become: true
+  become_user: "{{ openai_codex_cli_user }}"
+  ansible.builtin.command: "{{ openai_codex_cli_binary_path }} --version"
   changed_when: false
-  register: openai_codex_cli_version
+  register: openai_codex_cli_verified_version
+  environment:
+    HOME: "{{ openai_codex_cli_user_home }}"
 
 - name: Show installed Codex CLI version
   ansible.builtin.debug:
-    msg: "{{ openai_codex_cli_version.stdout }}"
+    msg: "{{ openai_codex_cli_verified_version.stdout }}"

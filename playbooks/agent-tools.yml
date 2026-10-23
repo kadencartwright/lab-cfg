@@ -1,0 +1,74 @@
+---
+- name: Upgrade agent tools on development hosts
+  hosts: remote_agent_dev_hosts
+  gather_facts: true
+  become: true
+  vars_files:
+    - ../roles/hermes_agent/defaults/main.yml
+  roles:
+    - role: opencode_cli
+    - role: openai_codex_cli
+      openai_codex_cli_user: agent
+      openai_codex_cli_user_home: /home/agent
+      openai_codex_cli_binary_path: /home/agent/.local/bin/codex
+  tasks:
+    - name: Update the Hermes T3 CLI to the server version
+      become_user: "{{ hermes_agent_user }}"
+      community.general.npm:
+        name: t3
+        version: "{{ hermes_t3_version }}"
+        path: "{{ hermes_t3_bridge_dir }}"
+        executable: /usr/bin/npm
+        state: present
+      register: agent_tools_t3_install
+      environment:
+        HOME: "{{ hermes_agent_user_home }}"
+
+    - name: Verify the T3 CLI version
+      become_user: "{{ hermes_agent_user }}"
+      ansible.builtin.command: "{{ hermes_t3_cli }} --version"
+      register: agent_tools_t3_version
+      changed_when: false
+      failed_when: hermes_t3_version not in agent_tools_t3_version.stdout
+
+    - name: Create the T3 service override directory
+      ansible.builtin.file:
+        path: /etc/systemd/system/t3.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Pin the T3 server to the installed CLI
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/t3.service.d/version.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [Service]
+          ExecStart=
+          ExecStart={{ hermes_t3_cli }} serve --host 127.0.0.1
+      register: agent_tools_t3_service_override
+
+    - name: Restart T3 after a version or service change
+      ansible.builtin.systemd_service:
+        name: t3.service
+        daemon_reload: true
+        state: restarted
+      when: >-
+        agent_tools_t3_install.changed or agent_tools_t3_service_override.changed or
+        opencode_cli_install.changed or opencode_cli_link.changed
+
+    - name: Wait for the T3 server
+      ansible.builtin.uri:
+        url: "{{ hermes_t3_url }}/"
+        status_code: 200
+      register: agent_tools_t3_health
+      until: agent_tools_t3_health.status == 200
+      retries: 15
+      delay: 2
+
+    - name: Verify T3 server is running
+      ansible.builtin.command: systemctl is-active t3.service
+      changed_when: false

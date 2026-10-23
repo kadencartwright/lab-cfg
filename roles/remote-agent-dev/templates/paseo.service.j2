@@ -1,0 +1,20 @@
+[Unit]
+Description=Paseo coding agent daemon
+Documentation=https://paseo.sh/docs
+Wants=network-online.target tailscaled.service
+After=network-online.target tailscaled.service
+
+[Service]
+Type=simple
+User={{ remote_agent_dev_user }}
+Group={{ remote_agent_dev_user }}
+Environment=HOME={{ remote_agent_dev_user_home }}
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+WorkingDirectory={{ remote_agent_dev_user_home }}
+ExecStart=/usr/local/bin/paseo daemon start --foreground --home {{ remote_agent_dev_paseo_home }}
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+
+[Install]
+WantedBy=multi-user.target

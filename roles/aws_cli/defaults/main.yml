@@ -1,0 +1,4 @@
+---
+aws_cli_version: "2.32.0"
+aws_cli_archive_sha256: "2e57ed5587de3789d39841c0f309134ccc13a215af597c7739f7102deca30dad"
+aws_cli_cache_dir: /var/cache/aws-cli

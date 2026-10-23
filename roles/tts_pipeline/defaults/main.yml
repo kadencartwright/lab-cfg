@@ -3,12 +3,18 @@ tts_pipeline_user: agent
 tts_pipeline_group: agent
 tts_pipeline_root: /opt/patristic-tts
 tts_pipeline_venv: "{{ tts_pipeline_root }}/venv"
+tts_pipeline_alignment_venv: "{{ tts_pipeline_root }}/alignment-venv"
 tts_pipeline_model_dir: "{{ tts_pipeline_root }}/models"
 tts_pipeline_output_dir: "{{ tts_pipeline_root }}/output"
 tts_pipeline_input_dir: "{{ tts_pipeline_root }}/inputs"
 tts_pipeline_master_dir: "{{ tts_pipeline_root }}/masters"
 tts_pipeline_delivery_dir: "{{ tts_pipeline_root }}/delivery"
 tts_pipeline_kokoro_onnx_version: "0.4.7"
+tts_pipeline_stable_ts_version: "2.19.1"
+tts_pipeline_alignment_model: "base.en"
+tts_pipeline_kokoros_root: "{{ tts_pipeline_root }}/kokoros"
+tts_pipeline_kokoros_revision: "b54354b860df94b064e254524777ce41d4d2c689"
+tts_pipeline_timestamped_model_url: https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX-timestamped/resolve/main/onnx/model.onnx
 tts_pipeline_model_url: https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
 tts_pipeline_voices_url: https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
 tts_pipeline_generate_samples: false

@@ -1,7 +1,12 @@
 ---
 openai_codex_cli_apt_packages:
-  - nodejs
-  - npm
-openai_codex_cli_npm_package: "@openai/codex"
-openai_codex_cli_npm_state: present
-openai_codex_cli_npm_version: ""
+  - ca-certificates
+  - curl
+openai_codex_cli_version: "0.164.0"
+openai_codex_cli_installer_url: https://chatgpt.com/codex/install.sh
+openai_codex_cli_installer_path: /usr/local/libexec/openai-codex-install
+openai_codex_cli_legacy_npm_package: "@openai/codex"
+openai_codex_cli_user: root
+openai_codex_cli_user_home: /root
+openai_codex_cli_binary_path: /usr/local/bin/codex
+openai_codex_cli_install_dir: "{{ openai_codex_cli_binary_path | dirname }}"

@@ -1,0 +1,88 @@
+---
+- name: Remove retired OpenBridge installation
+  hosts: remote_agent_dev_hosts
+  gather_facts: false
+  become: true
+  become_user: agent
+  tasks:
+    - name: Find agent runtime directory
+      ansible.builtin.command: id -u agent
+      register: openbridge_retirement_uid
+      changed_when: false
+
+    - name: Check retired service files
+      ansible.builtin.stat:
+        path: "/home/agent/.config/systemd/user/{{ item }}"
+      loop:
+        - openbridge-host-agent.service
+        - openbridge-opencode.service
+      register: openbridge_retirement_units
+
+    - name: Stop and disable retired services
+      ansible.builtin.systemd_service:
+        name: "{{ item.item }}"
+        scope: user
+        state: stopped
+        enabled: false
+      loop: "{{ openbridge_retirement_units.results }}"
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ openbridge_retirement_uid.stdout }}"
+      when: item.stat.exists
+
+    - name: Remove retired service files and installed data
+      ansible.builtin.file:
+        path: "/home/agent/{{ item }}"
+        state: absent
+      loop:
+        - .config/systemd/user/openbridge-host-agent.service
+        - .config/systemd/user/openbridge-opencode.service
+        - .config/systemd/user/openbridge-host-agent.service.d
+        - .config/systemd/user/openbridge-opencode.service.d
+        - .local/lib/openbridge
+        - .local/share/openbridge
+        - .config/openbridge
+        - .config/@openbridge
+
+    - name: Reload user service definitions
+      ansible.builtin.systemd_service:
+        scope: user
+        daemon_reload: true
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ openbridge_retirement_uid.stdout }}"
+
+- name: Remove retired Orca installation
+  hosts: remote_agent_dev_hosts
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Check Orca service file
+      ansible.builtin.stat:
+        path: /etc/systemd/system/orca-serve.service
+      register: orca_retirement_unit
+
+    - name: Stop and disable Orca
+      ansible.builtin.systemd_service:
+        name: orca-serve.service
+        state: stopped
+        enabled: false
+      when: orca_retirement_unit.stat.exists
+
+    - name: Remove Orca service and installed files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/systemd/system/orca-serve.service
+        - /etc/systemd/system/orca-serve.service.d
+        - /opt/orca
+        - /home/agent/.local/bin/orca
+        - /home/agent/.local/bin/orca-ide
+        - /home/agent/.config/orca
+        - /home/agent/.orca
+        - /home/agent/.orca-relay
+        - /home/agent/.orca-remote
+        - /home/agent/.hermes/plugins/orca-status
+
+    - name: Reload system service definitions
+      ansible.builtin.systemd_service:
+        daemon_reload: true

@@ -1,0 +1,92 @@
+---
+- name: Require a Debian-family virtualization host
+  ansible.builtin.assert:
+    that:
+      - ansible_facts["os_family"] == "Debian"
+    fail_msg: "This virtualization role currently targets Ubuntu/Debian-family systems."
+
+- name: Install QEMU, libvirt, and Virtual Machine Manager
+  ansible.builtin.apt:
+    name: "{{ virtualization_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Grant virtualization access to configured users
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups:
+      - kvm
+      - libvirt
+    append: true
+  loop: "{{ virtualization_users }}"
+
+- name: Enable and start libvirt
+  ansible.builtin.systemd:
+    name: libvirtd.service
+    enabled: true
+    state: started
+
+- name: Inspect the libvirt network
+  ansible.builtin.command:
+    argv:
+      - virsh
+      - net-info
+      - "{{ virtualization_network }}"
+  register: virtualization_network_info
+  changed_when: false
+  failed_when: false
+
+- name: Define the libvirt network
+  ansible.builtin.command:
+    argv:
+      - virsh
+      - net-define
+      - "{{ virtualization_network_definition }}"
+  when: virtualization_network_info.rc != 0
+  register: virtualization_network_define
+  changed_when: virtualization_network_define.rc == 0
+
+- name: Refresh libvirt network information
+  ansible.builtin.command:
+    argv:
+      - virsh
+      - net-info
+      - "{{ virtualization_network }}"
+  register: virtualization_network_state
+  changed_when: false
+
+- name: Enable libvirt network autostart
+  ansible.builtin.command:
+    argv:
+      - virsh
+      - net-autostart
+      - "{{ virtualization_network }}"
+  when: "'Autostart:      yes' not in virtualization_network_state.stdout"
+  register: virtualization_network_autostart
+  changed_when: virtualization_network_autostart.rc == 0
+
+- name: Start the libvirt network
+  ansible.builtin.command:
+    argv:
+      - virsh
+      - net-start
+      - "{{ virtualization_network }}"
+  when: "'Active:         yes' not in virtualization_network_state.stdout"
+  register: virtualization_network_start
+  changed_when: virtualization_network_start.rc == 0
+
+- name: Verify configured users can access system libvirt
+  ansible.builtin.command:
+    argv:
+      - runuser
+      - --user
+      - "{{ item }}"
+      - --
+      - virsh
+      - --connect
+      - qemu:///system
+      - list
+      - --all
+  loop: "{{ virtualization_users }}"
+  changed_when: false

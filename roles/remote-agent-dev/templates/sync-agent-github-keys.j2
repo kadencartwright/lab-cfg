@@ -8,10 +8,16 @@ agent_home={{ remote_agent_dev_user_home | quote }}
 ssh_dir="${agent_home}/.ssh"
 authorized_keys="${ssh_dir}/authorized_keys"
 tmp_keys="$(mktemp)"
+tmp_authorized_keys=""
 lock_file="/run/sync-agent-github-keys.lock"
+managed_block_start="# BEGIN github.com/${github_user}.keys (managed)"
+managed_block_end="# END github.com/${github_user}.keys (managed)"
 
 cleanup() {
   rm -f "${tmp_keys}"
+  if [[ -n "${tmp_authorized_keys}" ]]; then
+    rm -f "${tmp_authorized_keys}"
+  fi
 }
 trap cleanup EXIT
 
@@ -30,12 +36,40 @@ fi
 
 {
   flock -x 9
-  while IFS= read -r key; do
-    key_identity="$(awk '{ print $1 " " $2 }' <<< "${key}")"
-    if ! awk -v key_identity="${key_identity}" '{ if (($1 " " $2) == key_identity) found = 1 } END { exit found ? 0 : 1 }' "${authorized_keys}"; then
-      printf '%s\n' "${key}" >> "${authorized_keys}"
-    fi
-  done < "${tmp_keys}"
-  chown "${agent_user}:${agent_group}" "${authorized_keys}"
-  chmod 0600 "${authorized_keys}"
+  tmp_authorized_keys="$(mktemp "${ssh_dir}/.authorized_keys.XXXXXX")"
+
+  # Preserve non-GitHub entries, remove the prior managed block, and migrate
+  # keys appended by older versions of this script into the managed block.
+  awk \
+    -v block_start="${managed_block_start}" \
+    -v block_end="${managed_block_end}" \
+    'function emit(line) {
+       if (line ~ /^[[:space:]]*$/) {
+         trailing_whitespace = trailing_whitespace line ORS
+       } else {
+         printf "%s", trailing_whitespace
+         print line
+         trailing_whitespace = ""
+       }
+     }
+     NR == FNR {
+       github_keys[$1 " " $2] = 1
+       next
+     }
+     $0 == block_start { in_managed_block = 1; next }
+     $0 == block_end { in_managed_block = 0; next }
+     !in_managed_block && !(($1 " " $2) in github_keys) { emit($0) }' \
+    "${tmp_keys}" "${authorized_keys}" > "${tmp_authorized_keys}"
+
+  if [[ -s "${tmp_authorized_keys}" ]]; then
+    printf '\n' >> "${tmp_authorized_keys}"
+  fi
+  printf '%s\n' "${managed_block_start}" >> "${tmp_authorized_keys}"
+  cat "${tmp_keys}" >> "${tmp_authorized_keys}"
+  printf '%s\n' "${managed_block_end}" >> "${tmp_authorized_keys}"
+
+  chown "${agent_user}:${agent_group}" "${tmp_authorized_keys}"
+  chmod 0600 "${tmp_authorized_keys}"
+  mv -f "${tmp_authorized_keys}" "${authorized_keys}"
+  tmp_authorized_keys=""
 } 9>"${lock_file}"

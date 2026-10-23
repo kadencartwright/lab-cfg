@@ -1,0 +1,21 @@
+---
+fast_node_manager_user: agent
+fast_node_manager_user_home: "/home/{{ fast_node_manager_user }}"
+fast_node_manager_version: "1.39.0"
+fast_node_manager_install_dir: "{{ fast_node_manager_user_home }}/.local/share/fnm"
+fast_node_manager_cache_dir: "{{ fast_node_manager_user_home }}/.cache/fnm"
+fast_node_manager_shell: bash
+fast_node_manager_shell_config_path: "{{ fast_node_manager_user_home }}/.bashrc"
+
+fast_node_manager_release_assets:
+  x86_64:
+    filename: fnm-linux.zip
+    sha256: "7807664f39d39fc518da1c35ba0181e4b3267603c4b1dedeb4b5fc6ae440a224"
+  aarch64:
+    filename: fnm-arm64.zip
+    sha256: "4eaff58b2c5bf30d0934027572dd0b5bbb60d2a1af309230b53662d4b1d45599"
+
+fast_node_manager_node_versions:
+  - "22.22.1"
+  - "24.19.0"
+fast_node_manager_default_node_version: "24.19.0"

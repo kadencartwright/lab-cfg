@@ -1,0 +1,30 @@
+---
+- name: Update OpenCode on development hosts
+  hosts: remote_agent_dev_hosts
+  gather_facts: true
+  become: true
+  vars_files:
+    - ../roles/hermes_agent/defaults/main.yml
+  roles:
+    - role: opencode_cli
+  tasks:
+    - name: Restart T3 to use the updated OpenCode
+      ansible.builtin.systemd_service:
+        name: t3.service
+        state: restarted
+      when: opencode_cli_install.changed or opencode_cli_link.changed
+
+    - name: Verify T3 is running
+      ansible.builtin.command: systemctl is-active t3.service
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Wait for the T3 HTTP endpoint
+      ansible.builtin.uri:
+        url: "{{ hermes_t3_url }}/"
+        status_code: 200
+      register: opencode_t3_health
+      until: opencode_t3_health.status == 200
+      retries: 15
+      delay: 2
+      when: not ansible_check_mode

@@ -1,0 +1,440 @@
+---
+- name: Create RiffGraph open-instrument directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ riffgraph_tools_dir }}"
+    - "{{ riffgraph_asset_cache_dir }}"
+    - "{{ riffgraph_instruments_dir }}"
+    - "{{ riffgraph_active_instruments_dir }}"
+    - "{{ riffgraph_sfizz_source_dir }}"
+    - "{{ riffgraph_sfizz_build_dir }}"
+    - "{{ riffgraph_sfizz_binary | dirname }}"
+    - "{{ riffgraph_nam_core_source_dir }}"
+    - "{{ riffgraph_nam_core_build_dir }}"
+    - "{{ riffgraph_nam_render_binary | dirname }}"
+
+- name: Download pinned sfizz source
+  ansible.builtin.get_url:
+    url: "{{ riffgraph_sfizz_url }}"
+    dest: "{{ riffgraph_sfizz_archive }}"
+    checksum: "sha256:{{ riffgraph_sfizz_sha256 }}"
+    owner: root
+    group: root
+    mode: "0644"
+    timeout: 600
+
+- name: Extract pinned sfizz source
+  ansible.builtin.unarchive:
+    src: "{{ riffgraph_sfizz_archive }}"
+    dest: "{{ riffgraph_sfizz_source_dir }}"
+    remote_src: true
+    extra_opts:
+      - --strip-components=1
+    creates: "{{ riffgraph_sfizz_source_dir }}/CMakeLists.txt"
+
+- name: Configure renderer-only sfizz build
+  ansible.builtin.command:
+    argv:
+      - cmake
+      - -S
+      - "{{ riffgraph_sfizz_source_dir }}"
+      - -B
+      - "{{ riffgraph_sfizz_build_dir }}"
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DSFIZZ_JACK=OFF
+      - -DSFIZZ_SHARED=OFF
+      - -DSFIZZ_RENDER=ON
+      - -DSFIZZ_TESTS=OFF
+      - -DSFIZZ_BENCHMARKS=OFF
+      - -DSFIZZ_DEMOS=OFF
+      - -DSFIZZ_DEVTOOLS=OFF
+  args:
+    creates: "{{ riffgraph_sfizz_build_dir }}/CMakeCache.txt"
+
+- name: Build pinned sfizz offline renderer
+  ansible.builtin.command:
+    argv:
+      - cmake
+      - --build
+      - "{{ riffgraph_sfizz_build_dir }}"
+      - --target
+      - sfizz_render
+      - --parallel
+      - "{{ [ansible_facts.processor_vcpus | default(4), 8] | min }}"
+  args:
+    creates: "{{ riffgraph_sfizz_build_dir }}/library/bin/sfizz_render"
+
+- name: Install pinned sfizz offline renderer
+  ansible.builtin.copy:
+    src: "{{ riffgraph_sfizz_build_dir }}/library/bin/sfizz_render"
+    dest: "{{ riffgraph_sfizz_binary }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download pinned Neural Amp Modeler source archives
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: "{{ item.archive }}"
+    checksum: "sha256:{{ item.sha256 }}"
+    owner: root
+    group: root
+    mode: "0644"
+    timeout: 600
+  loop:
+    - name: NeuralAmpModelerCore
+      url: "{{ riffgraph_nam_core_url }}"
+      archive: "{{ riffgraph_nam_core_archive }}"
+      sha256: "{{ riffgraph_nam_core_sha256 }}"
+    - name: AudioDSPTools
+      url: "{{ riffgraph_nam_audiodsp_url }}"
+      archive: "{{ riffgraph_nam_audiodsp_archive }}"
+      sha256: "{{ riffgraph_nam_audiodsp_sha256 }}"
+    - name: Eigen
+      url: "{{ riffgraph_nam_eigen_url }}"
+      archive: "{{ riffgraph_nam_eigen_archive }}"
+      sha256: "{{ riffgraph_nam_eigen_sha256 }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Extract pinned NeuralAmpModelerCore source
+  ansible.builtin.unarchive:
+    src: "{{ riffgraph_nam_core_archive }}"
+    dest: "{{ riffgraph_nam_core_source_dir }}"
+    remote_src: true
+    extra_opts:
+      - --strip-components=1
+    creates: "{{ riffgraph_nam_core_source_dir }}/CMakeLists.txt"
+
+- name: Extract pinned AudioDSPTools dependency
+  ansible.builtin.unarchive:
+    src: "{{ riffgraph_nam_audiodsp_archive }}"
+    dest: "{{ riffgraph_nam_core_source_dir }}/Dependencies/AudioDSPTools"
+    remote_src: true
+    extra_opts:
+      - --strip-components=1
+    creates: "{{ riffgraph_nam_core_source_dir }}/Dependencies/AudioDSPTools/dsp/wav.cpp"
+
+- name: Extract pinned Eigen dependency
+  ansible.builtin.unarchive:
+    src: "{{ riffgraph_nam_eigen_archive }}"
+    dest: "{{ riffgraph_nam_core_source_dir }}/Dependencies/eigen"
+    remote_src: true
+    extra_opts:
+      - --strip-components=1
+    creates: "{{ riffgraph_nam_core_source_dir }}/Dependencies/eigen/Eigen/Core"
+
+- name: Configure pinned NeuralAmpModelerCore renderer
+  ansible.builtin.command:
+    argv:
+      - cmake
+      - -S
+      - "{{ riffgraph_nam_core_source_dir }}"
+      - -B
+      - "{{ riffgraph_nam_core_build_dir }}"
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DNAM_ENABLE_A2_FAST=ON
+  args:
+    creates: "{{ riffgraph_nam_core_build_dir }}/CMakeCache.txt"
+
+- name: Build pinned NeuralAmpModelerCore renderer
+  ansible.builtin.command:
+    argv:
+      - cmake
+      - --build
+      - "{{ riffgraph_nam_core_build_dir }}"
+      - --target
+      - render
+      - --parallel
+      - "{{ [ansible_facts.processor_vcpus | default(4), 8] | min }}"
+  args:
+    creates: "{{ riffgraph_nam_core_build_dir }}/tools/render"
+
+- name: Install pinned NeuralAmpModelerCore renderer
+  ansible.builtin.copy:
+    src: "{{ riffgraph_nam_core_build_dir }}/tools/render"
+    dest: "{{ riffgraph_nam_render_binary }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download pinned CC-BY NAM captures
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: "{{ item.destination }}"
+    checksum: "sha256:{{ item.sha256 }}"
+    owner: root
+    group: root
+    mode: "0444"
+    timeout: 600
+  loop:
+    - name: AlphaOmegaSVT1176 bass rig
+      url: "{{ riffgraph_bass_nam_model_url }}"
+      destination: "{{ riffgraph_bass_nam_model }}"
+      sha256: "{{ riffgraph_bass_nam_model_sha256 }}"
+    - name: Two Rock Studio Signature clean guitar rig
+      url: "{{ riffgraph_jazz_guitar_nam_model_url }}"
+      destination: "{{ riffgraph_jazz_guitar_nam_model }}"
+      sha256: "{{ riffgraph_jazz_guitar_nam_model_sha256 }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Download pinned open instrument archives
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: "{{ item.archive }}"
+    checksum: "{{ item.checksum }}"
+    owner: root
+    group: root
+    mode: "0644"
+    timeout: 1800
+  loop:
+    - name: Karoryfer Shinyguitar
+      url: "{{ riffgraph_shinyguitar_url }}"
+      archive: "{{ riffgraph_shinyguitar_archive }}"
+      checksum: "sha256:{{ riffgraph_shinyguitar_sha256 }}"
+    - name: FreePats distorted guitar
+      url: "{{ riffgraph_distorted_guitar_url }}"
+      archive: "{{ riffgraph_distorted_guitar_archive }}"
+      checksum: "sha256:{{ riffgraph_distorted_guitar_sha256 }}"
+    - name: Karoryfer Growlybass
+      url: "{{ riffgraph_growlybass_url }}"
+      archive: "{{ riffgraph_growlybass_archive }}"
+      checksum: "sha256:{{ riffgraph_growlybass_sha256 }}"
+    - name: FreePats New Age pad
+      url: "{{ riffgraph_pad_url }}"
+      archive: "{{ riffgraph_pad_archive }}"
+      checksum: "sha256:{{ riffgraph_pad_sha256 }}"
+    - name: CrocellKit
+      url: "{{ riffgraph_crocell_url }}"
+      archive: "{{ riffgraph_crocell_archive }}"
+      checksum: "sha256:{{ riffgraph_crocell_sha256 }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Create versioned open instrument extraction directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ riffgraph_shinyguitar_dir }}"
+    - "{{ riffgraph_distorted_guitar_dir }}"
+    - "{{ riffgraph_growlybass_dir }}"
+    - "{{ riffgraph_pad_dir }}"
+    - "{{ riffgraph_crocell_dir }}"
+
+- name: Extract ZIP open instrument archives
+  ansible.builtin.command:
+    argv:
+      - unzip
+      - -q
+      - -o
+      - "{{ item.archive }}"
+      - -d
+      - "{{ item.destination }}"
+  args:
+    creates: "{{ item.destination }}/.riffgraph-extracted"
+  loop:
+    - name: Karoryfer Shinyguitar
+      archive: "{{ riffgraph_shinyguitar_archive }}"
+      destination: "{{ riffgraph_shinyguitar_dir }}"
+    - name: Karoryfer Growlybass
+      archive: "{{ riffgraph_growlybass_archive }}"
+      destination: "{{ riffgraph_growlybass_dir }}"
+    - name: CrocellKit
+      archive: "{{ riffgraph_crocell_archive }}"
+      destination: "{{ riffgraph_crocell_dir }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Mark ZIP open instrument archives as extracted
+  ansible.builtin.copy:
+    content: "{{ item.digest }}\n"
+    dest: "{{ item.destination }}/.riffgraph-extracted"
+    owner: root
+    group: root
+    mode: "0444"
+  loop:
+    - destination: "{{ riffgraph_shinyguitar_dir }}"
+      digest: "{{ riffgraph_shinyguitar_sha256 }}"
+    - destination: "{{ riffgraph_growlybass_dir }}"
+      digest: "{{ riffgraph_growlybass_sha256 }}"
+    - destination: "{{ riffgraph_crocell_dir }}"
+      digest: "{{ riffgraph_crocell_sha256 }}"
+
+- name: Extract 7-Zip open instrument archives
+  ansible.builtin.command:
+    argv:
+      - bsdtar
+      - -xf
+      - "{{ item.archive }}"
+      - -C
+      - "{{ item.destination }}"
+  args:
+    creates: "{{ item.destination }}/.riffgraph-extracted"
+  loop:
+    - name: FreePats distorted guitar
+      archive: "{{ riffgraph_distorted_guitar_archive }}"
+      destination: "{{ riffgraph_distorted_guitar_dir }}"
+    - name: FreePats New Age pad
+      archive: "{{ riffgraph_pad_archive }}"
+      destination: "{{ riffgraph_pad_dir }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Mark 7-Zip open instrument archives as extracted
+  ansible.builtin.copy:
+    content: "{{ item.digest }}\n"
+    dest: "{{ item.destination }}/.riffgraph-extracted"
+    owner: root
+    group: root
+    mode: "0444"
+  loop:
+    - destination: "{{ riffgraph_distorted_guitar_dir }}"
+      digest: "{{ riffgraph_distorted_guitar_sha256 }}"
+    - destination: "{{ riffgraph_pad_dir }}"
+      digest: "{{ riffgraph_pad_sha256 }}"
+
+- name: Find installed open instrument definitions
+  ansible.builtin.find:
+    paths: "{{ item.path }}"
+    patterns: "{{ item.pattern }}"
+    file_type: file
+    recurse: true
+  loop:
+    - name: jazz guitar
+      path: "{{ riffgraph_shinyguitar_dir }}"
+      pattern: main.sfz
+    - name: distorted guitar
+      path: "{{ riffgraph_distorted_guitar_dir }}"
+      pattern: "*.sfz"
+    - name: finger bass
+      path: "{{ riffgraph_growlybass_dir }}"
+      pattern: growlybass_dirty.sfz
+    - name: pad
+      path: "{{ riffgraph_pad_dir }}"
+      pattern: "*.sfz"
+    - name: Crocell full drumkit
+      path: "{{ riffgraph_crocell_dir }}"
+      pattern: CrocellKit_full.xml
+    - name: Crocell full MIDI map
+      path: "{{ riffgraph_crocell_dir }}"
+      pattern: Midimap_full.xml
+  register: riffgraph_open_instrument_definitions
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Require one definition for every open instrument
+  ansible.builtin.assert:
+    that:
+      - item.matched == 1
+    fail_msg: >-
+      Expected exactly one {{ item.item.name }} definition below
+      {{ item.item.path }}, found {{ item.matched }}.
+  loop: "{{ riffgraph_open_instrument_definitions.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+
+- name: Select installed open instrument definitions
+  ansible.builtin.set_fact:
+    riffgraph_jazz_guitar_sfz_source: >-
+      {{ riffgraph_open_instrument_definitions.results[0].files[0].path }}
+    riffgraph_distorted_guitar_sfz_source: >-
+      {{ riffgraph_open_instrument_definitions.results[1].files[0].path }}
+    riffgraph_finger_bass_sfz_source: >-
+      {{ riffgraph_open_instrument_definitions.results[2].files[0].path }}
+    riffgraph_pad_sfz_source: >-
+      {{ riffgraph_open_instrument_definitions.results[3].files[0].path }}
+    riffgraph_drumkit_source: >-
+      {{ riffgraph_open_instrument_definitions.results[4].files[0].path }}
+    riffgraph_drum_midimap_source: >-
+      {{ riffgraph_open_instrument_definitions.results[5].files[0].path }}
+
+- name: Make Shinyguitar sample path portable to sfizz
+  ansible.builtin.replace:
+    path: "{{ riffgraph_jazz_guitar_sfz_source }}"
+    regexp: '^default_path=\$sample_dir/\s*$'
+    replace: "default_path=../Samples/"
+
+- name: Link selected melodic open instruments
+  ansible.builtin.file:
+    src: "{{ item.source }}"
+    dest: "{{ item.destination }}"
+    state: link
+    owner: root
+    group: root
+    force: true
+  loop:
+    - source: "{{ riffgraph_jazz_guitar_sfz_source }}"
+      destination: "{{ riffgraph_jazz_guitar_sfz }}"
+    - source: "{{ riffgraph_distorted_guitar_sfz_source }}"
+      destination: "{{ riffgraph_distorted_guitar_sfz }}"
+    - source: "{{ riffgraph_finger_bass_sfz_source }}"
+      destination: "{{ riffgraph_finger_bass_sfz }}"
+    - source: "{{ riffgraph_pad_sfz_source }}"
+      destination: "{{ riffgraph_pad_sfz }}"
+
+- name: Link selected Crocell full drumkit
+  ansible.builtin.file:
+    src: "{{ riffgraph_drumkit_source }}"
+    dest: "{{ riffgraph_drumkit }}"
+    state: link
+    owner: root
+    group: root
+    force: true
+
+- name: Install RiffGraph Crocell MIDI map
+  ansible.builtin.template:
+    src: crocell-midimap.xml.j2
+    dest: "{{ riffgraph_drum_midimap }}"
+    owner: root
+    group: root
+    mode: "0444"
+
+- name: Record open instrument attribution and licenses
+  ansible.builtin.copy:
+    content: |
+      RiffGraph open instrument profile
+
+      Shinyguitar by Karoryfer Samples — CC0 1.0
+      FSBS Electric Guitar Distorted #1 by FreePats — CC0 1.0
+      Growlybass by Karoryfer Samples — CC0 1.0
+      New Age Pad by FreePats — CC0 1.0
+      CrocellKit by DrumGizmo/Crocell/JBOSound — CC BY 4.0
+      AlphaOmegaSVT1176 NAM capture by Vicious Audio/@viciousaudio — CC BY
+      Two Rock Studio Signature + OX Box 2x12 NAM capture by
+      Daniel Nguyen/@danielnguyen — CC BY
+      Dragonfly Plate Reverb by Michael Willis and contributors — GPL-3.0-or-later
+      lv2file by Jeremy Salwen and contributors — GPL-3.0-or-later
+
+      CrocellKit attribution:
+      https://www.drumgizmo.org/wiki/doku.php?id=kits%3Acrocellkit
+
+      AlphaOmegaSVT1176 attribution and license declaration:
+      https://www.tone3000.com/tones/alphaomegasvt1176-5702
+
+      Two Rock clean full-rig attribution and license declaration:
+      https://www.tone3000.com/tones/two-rock-studio-signature-ox-box-2x12-two-rock-cab-5352
+
+      Dragonfly Reverb source and license:
+      https://github.com/michaelwillis/dragonfly-reverb
+
+      lv2file source and license:
+      https://github.com/jeremysalwen/lv2file
+
+      NeuralAmpModelerCore by Steven Atkinson and contributors — MIT
+      https://github.com/sdatkinson/NeuralAmpModelerCore
+    dest: "{{ riffgraph_active_instruments_dir }}/CREDITS.txt"
+    owner: root
+    group: root
+    mode: "0444"

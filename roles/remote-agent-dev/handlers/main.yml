@@ -6,3 +6,9 @@
 - name: Run GitHub key sync
   ansible.builtin.command: "{{ remote_agent_dev_key_sync_script_path }}"
   changed_when: false
+
+- name: Restart Paseo
+  ansible.builtin.systemd:
+    name: "{{ remote_agent_dev_paseo_service_name }}"
+    state: restarted
+    daemon_reload: true

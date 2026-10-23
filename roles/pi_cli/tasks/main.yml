@@ -1,0 +1,52 @@
+---
+- name: Manage Pi CLI with the existing fnm Node runtime
+  become: true
+  become_user: "{{ pi_cli_user }}"
+  environment:
+    HOME: "{{ pi_cli_user_home }}"
+    FNM_DIR: "{{ pi_cli_fnm_dir }}"
+    PATH: "{{ pi_cli_prefix }}/bin:/usr/local/bin:/usr/bin:/bin"
+  block:
+    - name: Check installed Pi CLI version
+      ansible.builtin.command:
+        argv:
+          - "{{ pi_cli_fnm_dir }}/fnm"
+          - exec
+          - --using=default
+          - "{{ pi_cli_prefix }}/bin/pi"
+          - --version
+      register: pi_cli_existing_version
+      changed_when: false
+      failed_when: false
+
+    - name: Install pinned Pi CLI release
+      ansible.builtin.command:
+        argv:
+          - "{{ pi_cli_fnm_dir }}/fnm"
+          - exec
+          - --using=default
+          - npm
+          - install
+          - --global
+          - --ignore-scripts
+          - --prefix
+          - "{{ pi_cli_prefix }}"
+          - "@earendil-works/pi-coding-agent@{{ pi_cli_version }}"
+      when: >-
+        pi_cli_existing_version.rc != 0 or
+        pi_cli_existing_version.stdout | trim != pi_cli_version
+      changed_when: true
+
+    - name: Verify pinned Pi CLI version
+      ansible.builtin.command:
+        argv:
+          - "{{ pi_cli_fnm_dir }}/fnm"
+          - exec
+          - --using=default
+          - "{{ pi_cli_prefix }}/bin/pi"
+          - --version
+      register: pi_cli_verified_version
+      changed_when: false
+      failed_when: >-
+        pi_cli_verified_version.rc != 0 or
+        pi_cli_verified_version.stdout | trim != pi_cli_version
