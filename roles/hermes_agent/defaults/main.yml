@@ -26,7 +26,7 @@ hermes_agent_packages:
   - libffi-dev
   - python3-dev
 
-hermes_t3_version: "0.1.2"
+hermes_t3_version: "0.1.3"
 hermes_t3_url: http://127.0.0.1:3773
 hermes_t3_home: "{{ hermes_agent_user_home }}/.t3"
 hermes_t3_bridge_dir: "{{ hermes_agent_user_home }}/.local/share/hermes-t3-bridge"

@@ -1,5 +1,5 @@
 ---
-opencode_cli_version: "2.1.4"
+opencode_cli_version: "2.2.0"
 opencode_cli_user: agent
 opencode_cli_user_home: /home/agent
 opencode_cli_binary_path: "{{ opencode_cli_user_home }}/.opencode/bin/opencode"

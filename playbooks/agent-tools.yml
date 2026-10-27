@@ -6,6 +6,9 @@
   vars_files:
     - ../roles/hermes_agent/defaults/main.yml
   roles:
+    - role: pi_cli
+    - role: claude_code
+      claude_code_upgrade: true
     - role: opencode_cli
     - role: openai_codex_cli
       openai_codex_cli_user: agent

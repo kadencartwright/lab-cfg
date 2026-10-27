@@ -25,14 +25,14 @@
     group: root
     mode: "0755"
 
-- name: Install native Claude Code for the development user
+- name: Install or upgrade native Claude Code for the development user
   become: true
   become_user: "{{ claude_code_user }}"
   ansible.builtin.command:
     argv:
       - /bin/bash
       - "{{ claude_code_installer_path }}"
-    creates: "{{ claude_code_binary_path }}"
+    creates: "{{ omit if claude_code_upgrade | bool else claude_code_binary_path }}"
   environment:
     HOME: "{{ claude_code_user_home }}"
 

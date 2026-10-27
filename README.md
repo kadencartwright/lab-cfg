@@ -231,11 +231,12 @@ not a goal right now.
 
 ### Update agent tools
 
-`make agent-tools` applies the pinned Codex CLI, Hermes T3 CLI, and OpenCode v2
-updates to `remote_agent_dev_hosts`. It expects the existing T3 system service.
+`make agent-tools` applies the pinned Pi, Codex CLI, Hermes T3 CLI, and OpenCode v2
+updates and upgrades native Claude Code to `remote_agent_dev_hosts`.
+It expects the existing T3 system service.
 The Hermes CLI and T3 server share the same version pin, with a systemd override
 pointing the server at the installed CLI. Version changes restart T3 and check
-its HTTP endpoint. OpenCode is pinned to native release 2.1.4 using the official
+its HTTP endpoint. OpenCode is pinned to native release 2.2.0 using the official
 v2 installer, with `/usr/local/bin/opencode` pointing to the agent-owned binary.
 The older snap remains installed, but the native command takes precedence.
 `make opencode` applies only the OpenCode update and restarts T3 when it changes.
