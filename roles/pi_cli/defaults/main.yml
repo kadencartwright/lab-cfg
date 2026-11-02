@@ -1,5 +1,5 @@
 ---
-pi_cli_version: "1.4.0"
+pi_cli_version: "1.5.0"
 pi_cli_user: agent
 pi_cli_user_home: "/home/{{ pi_cli_user }}"
 pi_cli_prefix: "{{ pi_cli_user_home }}/.local"

@@ -50,6 +50,7 @@
         mode: "0644"
         content: |
           [Service]
+          Environment=PATH={{ hermes_agent_user_home }}/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
           ExecStart=
           ExecStart={{ hermes_t3_cli }} serve --host 127.0.0.1
       register: agent_tools_t3_service_override
